@@ -1,0 +1,22 @@
+{
+  "name": "backwindow",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "db:start": "docker-compose up",
+    "db:shutdown": "docker-compose down",
+    "db:cleanup": "docker-compose down --volumes"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^16.11.7",
+    "prisma": "3.4.2",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.4.4"
+  },
+  "dependencies": {
+    "@prisma/client": "^3.4.2"
+  }
+}
