@@ -14,16 +14,15 @@ model Org {
   id              Int      @id @default(autoincrement())
   sfUserId        String   @unique
   sfOrgId         String   @unique
-  privateCert     String?
-  publicCert      String?
-  users           User[]
+  appClientId     String?
+  appPrivateKey   String?
+  allowedList     AllowedEntry[]
 }
 
-model User {
+model AllowedEntry {
   id      Int      @id @default(autoincrement())
   org     Org      @relation(fields: [orgId], references: [id])
   orgId   Int
   email   String   
-
   @@unique([orgId, email])
 }
