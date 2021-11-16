@@ -4,19 +4,48 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node lib/server/app.js",
+    "start:dev": "ts-node src/server/app.ts",
+    "build": "run-p build:asset build:client build:server",
+    "build:asset": "cpx \"node_modules/@salesforce-ux/design-system/assets/**/*\" public/assets",
+    "build:client": "node ./esbuild.js",
+    "build:server": "esbuild src/server/app.ts --bundle --platform=node --target=node14 --outdir=lib/server",
+    "watch": "npm run build:client watch",
+    "typecheck": "tsc --noEmit",
     "db:start": "docker-compose up",
     "db:shutdown": "docker-compose down",
     "db:cleanup": "docker-compose down --volumes"
   },
-  "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@salesforce-ux/design-system": "^2.16.2",
+    "@types/axios": "^0.14.0",
+    "@types/cookie-parser": "^1.4.2",
+    "@types/express": "^4.17.13",
+    "@types/express-session": "^1.17.4",
     "@types/node": "^16.11.7",
+    "@types/react": "^17.0.34",
+    "@types/react-dom": "^17.0.11",
+    "cpx": "^1.5.0",
+    "esbuild": "^0.13.13",
+    "npm-run-all": "^4.1.5",
     "prisma": "3.4.2",
+    "rimraf": "^3.0.2",
     "ts-node": "^10.4.0",
     "typescript": "^4.4.4"
   },
   "dependencies": {
-    "@prisma/client": "^3.4.2"
+    "@prisma/client": "^3.4.2",
+    "@types/jsonwebtoken": "^8.5.6",
+    "axios": "^0.24.0",
+    "cookie-parser": "^1.4.5",
+    "express": "^4.17.1",
+    "express-session": "^1.17.2",
+    "google-auth-library": "^7.10.2",
+    "jsforce": "^2.0.0-beta.8",
+    "jsonwebtoken": "^8.5.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "swr": "^1.0.1"
   }
 }
