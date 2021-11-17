@@ -5,6 +5,7 @@ import React, { ReactNode } from "react";
  */
 export type FormElementProps = {
   id?: string;
+  className?: string;
   label?: string;
 	children: ReactNode;
 };
@@ -13,9 +14,9 @@ export type FormElementProps = {
  *
  */
 export const FormElement = (props: FormElementProps) => {
-  const { id, label, children } = props;
+  const { id, className, label, children } = props;
   return (
-    <div className="slds-form-element">
+    <div className={`slds-form-element ${className}`}>
       <label className="slds-form-element__label" htmlFor={id}>
         {label}
       </label>

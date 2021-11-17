@@ -44,43 +44,42 @@ const AppHeader = (props: AppProps) => {
             <span className="slds-assistive-text">Salesforce</span>
           </div>
         </div>
-        {userId ? (
-          <>
-            <div className="slds-global-header__item">
-              <ul className="slds-global-actions">
-                <li className="slds-global-actions__item">
-                  Logged in as: {userId}
-                </li>
-                <li className="slds-global-actions__item">
-                  {path === "/" ? (
-                    "Home"
-                  ) : (
-                    <a href="/" title="Admin">
-                      Home
-                    </a>
-                  )}{" "}
-                  |
-                </li>
-                <li className="slds-global-actions__item">
-                  {path === "/admin/" ? (
-                    "Admin"
-                  ) : (
-                    <a href="/admin/" title="Admin">
-                      Admin
-                    </a>
-                  )}{" "}
-                  |
-                </li>
-
-                <li className="slds-global-actions__item">
-                  <a href="/auth/logout" title="Logout">
-                    Logout
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </>
-        ) : undefined}
+        <div className="slds-global-header__item">
+          <ul className="slds-global-actions">
+            {userId ? (
+              <li className="slds-global-actions__item">
+                Logged in as: {userId} |
+              </li>
+            ) : undefined}
+            <li className="slds-global-actions__item">
+              {path === "/" ? (
+                "Home"
+              ) : (
+                <a href="/" title="Admin">
+                  Home
+                </a>
+              )}
+            </li>
+            <li className="slds-global-actions__item">
+              |{" "}
+              {path === "/admin/" ? (
+                "Admin"
+              ) : (
+                <a href="/admin/" title="Admin">
+                  Admin
+                </a>
+              )}
+            </li>
+            {userId ? (
+              <li className="slds-global-actions__item">
+                |{" "}
+                <a href="/auth/logout" title="Logout">
+                  Logout
+                </a>
+              </li>
+            ) : undefined}
+          </ul>
+        </div>
       </div>
     </header>
   );
@@ -109,7 +108,7 @@ const AppContent = (props: AppProps) => {
  */
 const HomePage = (props: AppProps) => {
   const { userId } = props;
-  return userId ? <BackwindowUsage /> : <UserLoginPrompt {...props} />;
+  return userId ? <HomeScreen {...props} /> : <UserLoginPrompt {...props} />;
 };
 
 /**
@@ -328,6 +327,16 @@ const AccessWarning = () => {
 /**
  *
  */
+const HomeScreen = (props: AppProps) => (
+  <>
+    <BackwindowUsage />
+    <BackwindowUrlGenerator {...props} />
+  </>
+);
+
+/**
+ *
+ */
 const BackwindowUsage = () => (
   <Card title="Welcome to Backwindow">
     <p className="slds-m-vertical_small">
@@ -350,6 +359,56 @@ const BackwindowUsage = () => (
     </div>
   </Card>
 );
+
+/**
+ *
+ */
+const BackwindowUrlGenerator = (props: AppProps) => {
+  const [hubOrgId, setHubOrgId] = useState("");
+  const [username, setUsername] = useState("");
+  const [loginServer, setLoginServer] = useState("sandbox");
+  const params = new URLSearchParams();
+  params.append("hub", hubOrgId);
+  params.append("un", username);
+  params.append("ls", loginServer);
+  const backwindowUrl = `${location.origin}/backwindow?${params.toString()}`;
+  const valid = hubOrgId.length === 18 && hubOrgId.startsWith('00D') && username && username.indexOf('@') > 0;
+  return (
+    <Card title="URL generator">
+      <FormElement label="DevHub Org ID (18 chars)">
+        <input
+          type="text"
+          className="slds-input"
+          value={hubOrgId}
+          onChange={(e) => setHubOrgId(e.target.value)}
+        />
+      </FormElement>
+      <FormElement label="Login Username (e.g. test-123456789@example.com)">
+        <input
+          type="text"
+          className="slds-input"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+      </FormElement>
+      <FormElement label="Environment">
+        <select
+          className="slds-input"
+          value={loginServer}
+          onChange={(e) => setLoginServer(e.target.value)}
+        >
+          <option value="production">Production</option>
+          <option value="sandbox">Sandbox</option>
+        </select>
+      </FormElement>
+      <FormElement className="slds-p-vertical_medium" label="Backwindow Login URL">
+        <div className="slds-box slds-box_x-small">
+          {valid ? <a href={ backwindowUrl}>{backwindowUrl}</a> : backwindowUrl}
+        </div>
+      </FormElement>
+    </Card>
+  );
+};
 
 /**
  *
