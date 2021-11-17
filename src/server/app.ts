@@ -278,6 +278,7 @@ app.get("/auth/salesforce/callback", async (req, res) => {
     (req.session as any).sfOrgId = sfOrgId;
   }
   (req.session as any).uid = username;
+  (req.session as any).provider = "salesforce";
   (req.session as any).isAdmin = isAdmin;
   const { redirectPath } = req.session as { redirectPath?: string };
   res.redirect(redirectPath ?? "/");
@@ -309,6 +310,7 @@ app.post("/auth/google/callback", async (req, res) => {
     const { email, email_verified } = payload ?? {};
     if (email && email_verified) {
       (req.session as any).uid = email;
+      (req.session as any).provider = "google";
     }
     const { redirectPath } = req.session as { redirectPath?: string };
     res.redirect(redirectPath ?? "/");
@@ -339,8 +341,8 @@ app.get("/backwindow", async (req, res) => {
     un?: string;
     ls?: string;
   };
-  const { uid } = req.session as any as { uid?: string };
-  if (!uid) {
+  const { uid, provider } = req.session as any as { uid?: string, provider?: string };
+  if (!uid || !provider) {
     (req.session as any).redirectPath = req.originalUrl;
     res.redirect("/");
     return;
@@ -364,7 +366,7 @@ app.get("/backwindow", async (req, res) => {
   }
   let isAllowed = false;
   for (const entry of allowedList) {
-    if (entry.email === uid) {
+    if (entry.email === uid && entry.provider === provider) {
       isAllowed = true;
       break;
     }
