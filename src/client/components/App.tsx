@@ -70,6 +70,12 @@ const AppHeader = (props: AppProps) => {
                 </a>
               )}
             </li>
+            <li className="slds-global-actions__item">
+              |{" "}
+              <a href="https://github.com/stomita/salesforce-backwindow-web" title="GitHub" target="_blank">
+                GitHub 
+              </a>
+            </li>
             {userId ? (
               <li className="slds-global-actions__item">
                 |{" "}
