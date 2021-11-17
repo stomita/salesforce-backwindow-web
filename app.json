@@ -1,0 +1,34 @@
+{
+  "name": "Backwindow Webapp",
+  "description": "A Salesforce login service that allows multiple users to sign in to multiple orgs without sharing any credentials or passwords",
+  "repository": "https://github.com/stomita/salesforce-backwindow-web",
+  "keywords": ["salesforce", "sfdx"],
+  "env": {
+    "SESSION_SECRET": {
+      "description": "A secret key for verifying the integrity of signed cookies.",
+      "generator": "secret"
+    },
+    "GL_BACKWINDOW_CLIENT_ID": {
+      "description": "\"Sign-in with Google\" client id. See https://developers.google.com/identity/sign-in/web/sign-in"
+    },
+    "GL_BACKWINDOW_REDIRECT_URI": {
+      "description": "\"Sign-in with Google\" callback URL. See https://developers.google.com/identity/sign-in/web/sign-in",
+      "value": "https://your-app-name.herokuapp.com/auth/google/callback"
+    },
+    "SF_BACKWINDOW_CLIENT_ID": {
+      "description": "Client ID of the Salesforce connected app for backwindow web app"
+    },
+    "SF_BACKWINDOW_CLIENT_SECRET": {
+      "description": "Client Secret of the Salesforce connected app for backwindow web app"
+    },
+    "SF_BACKWINDOW_REDIRECT_URI": {
+      "description": "Callback URL of the Salesforce connected app for backwindow web app",
+      "value": "https://your-app-name.herokuapp.com/auth/salesforce/callback"
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:hobby-dev"
+    }
+  ]
+}
