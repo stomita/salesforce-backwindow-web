@@ -164,7 +164,7 @@ const GoogleLoginButton = () => (
 
 const AdminLoginPrompt = (props: AppProps) => {
   return (
-    <Card icon="user" title="Login with HubOrg Account">
+    <Card icon="user" title="Login with DevHub Org Admin Account">
       <div className="slds-p-around_large slds-align_absolute-center">
         <SalesforceLoginButton {...props} />
       </div>
@@ -380,7 +380,7 @@ const BackwindowUrlGenerator = (props: AppProps) => {
   const backwindowUrl = `${location.origin}/backwindow?${params.toString()}`;
   const valid = hubOrgId.length === 18 && hubOrgId.startsWith('00D') && username && username.indexOf('@') > 0;
   return (
-    <Card title="URL generator">
+    <Card title="URL Generator">
       <FormElement label="DevHub Org ID (18 chars)">
         <input
           type="text"
