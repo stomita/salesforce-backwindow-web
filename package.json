@@ -15,6 +15,8 @@
     "db:start": "docker-compose up",
     "db:shutdown": "docker-compose down",
     "db:cleanup": "docker-compose down --volumes",
+    "migrate:dev": "prisma migrate deploy",
+    "migrate:prod": "prisma migrate deploy",
     "postinstall": "npm run build"
   },
   "license": "MIT",
