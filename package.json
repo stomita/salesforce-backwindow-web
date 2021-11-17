@@ -1,7 +1,13 @@
 {
-  "name": "backwindow",
+  "name": "salesforce-backwindow-web",
   "version": "1.0.0",
-  "description": "",
+  "description": "A Salesforce login service that allows multiple users to sign in to multiple orgs without sharing any credentials or passwords",
+  "private": true,
+  "author": {
+    "name": "Shinichi Tomita",
+    "email": "shinichi.tomita@gmail.com"
+  },
+  "license": "MIT",
   "main": "lib/server/app.js",
   "scripts": {
     "start": "node lib/server/app.js",
@@ -17,7 +23,6 @@
     "db:cleanup": "docker-compose down --volumes",
     "postinstall": "npm run build"
   },
-  "license": "MIT",
   "devDependencies": {},
   "dependencies": {
     "@prisma/client": "3.5.0",
