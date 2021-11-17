@@ -2,7 +2,7 @@
 
 Backwindow is a Salesforce login service that allows multiple users to sign in to multiple orgs without sharing any credentials or passwords, using JWT grant.
 
-Backwindow is secure because it does not persistently expose credential information, unlike sharing URL with the Salesforce CLI `force:org:open` command (a.k.a frontdoor.jsp URL).
+Backwindow is secure because it does not persistently expose credential information, unlike sharing URL with the Salesforce CLI `force:org:open` command (a.k.a frontdoor.jsp URL), which contains session id credential in the URL string.
 Only registered users can get login access to the orgs which accept JWT bearer auth.
 
 # Setup
@@ -54,6 +54,8 @@ First, click the "Sign in with Salesforce" button and login to the DevHub org pr
 
 After logged in, click "Admin" link in the top bar.
 
+![image](https://user-images.githubusercontent.com/23387/142156014-c4870e60-d3c7-449f-9560-43a2f15161b0.png)
+
 In the "Connected App Setting" section, click "Edit" button to enter the client ID and content of the private key file to the form, and press "Save".
 
 Then in the "Allowed Users" section, add the users' email addresses you want to be accessed through Backwindow.
@@ -61,6 +63,8 @@ Then in the "Allowed Users" section, add the users' email addresses you want to 
 ## Generate Sharable Login URL
 
 In the "Home" screen you can generate a login URL of backwindow without any credential information.
+
+![image](https://user-images.githubusercontent.com/23387/142156337-6980f35e-6d55-4965-a8dd-6ce420ac737f.png)
 
 To generate a login URL, you need to enter the DevHub org ID, the username of the user to log in, and the environment of the org you want to log in.
 
