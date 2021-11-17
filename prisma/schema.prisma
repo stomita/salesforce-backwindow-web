@@ -20,9 +20,10 @@ model Org {
 }
 
 model AllowedEntry {
-  id      Int      @id @default(autoincrement())
-  org     Org      @relation(fields: [orgId], references: [id])
-  orgId   Int
-  email   String   
-  @@unique([orgId, email])
+  id       Int      @id @default(autoincrement())
+  org      Org      @relation(fields: [orgId], references: [id])
+  orgId    Int
+  provider String   @default("google")
+  email    String   
+  @@unique([orgId, provider, email])
 }

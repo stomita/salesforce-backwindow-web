@@ -10,6 +10,7 @@ import { genid } from "../util";
 import { Button } from "./common/Button";
 import { Card } from "./common/Card";
 import { FormElement } from "./common/FormElement";
+import { GOOGLE_ICON_IMAGE_DATA_URL, SALESFORCE_ICON_IMAGE_DATA_URL } from "./const";
 
 /**
  *
@@ -20,9 +21,9 @@ type AppProps = {
   isAdmin?: boolean;
   error?: string;
   appId?: string;
-  allowedEntryList?: Array<{ id: number; email: string }>;
+  allowedEntryList?: Array<{ id: number; provider: string; email: string }>;
   onDeleteAllowedEntry: (id: number) => void;
-  onCreateAllowedEntry: (email: string) => void;
+  onCreateAllowedEntry: (provider: string, email: string) => void;
   onUpdateConnectedApp: (params: {
     appId: string;
     privateKey?: string;
@@ -275,14 +276,17 @@ const AllowedUserList = (props: AppProps) => {
     onDeleteAllowedEntry,
   } = props;
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const selectRef = useRef<HTMLSelectElement | null>(null);
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.keyCode === 13) {
         const inputEl = inputRef.current;
-        if (inputEl) {
+        const selectEl = selectRef.current;
+        if (inputEl && selectEl) {
           const email = inputEl.value;
+          const provider = selectEl.value || 'google'
           inputEl.value = "";
-          onCreateAllowedEntry(email);
+          onCreateAllowedEntry(provider, email);
         }
       }
     },
@@ -292,9 +296,16 @@ const AllowedUserList = (props: AppProps) => {
     <Card icon="user" title="Allowed Users">
       {allowedEntryList.map((entry) => (
         <div
-          key={entry.email}
+          key={entry.id}
           className="slds-p-left_small slds-p-vertical_x-small"
         >
+          <span className="slds-p-right_x-small">
+            { entry.provider === "google" ?
+              <img width={20} src={GOOGLE_ICON_IMAGE_DATA_URL} title="Google" /> :
+              entry.provider === "salesforce" ?
+              <img width={20} src={SALESFORCE_ICON_IMAGE_DATA_URL} title="Salesforce" /> :
+              undefined }
+          </span>
           <span>{entry.email}</span>
           <Button
             className="slds-m-left_small"
@@ -305,12 +316,16 @@ const AllowedUserList = (props: AppProps) => {
           />
         </div>
       ))}
-      <div className="slds-p-vertical_x-small">
+      <div className="slds-p-vertical_x-small slds-grid">
+        <select ref={selectRef} className="slds-input slds-col slds-size_1-of-6">
+          <option value="google">Google</option>
+          <option value="salesforce">Salesforce</option>
+        </select>
         <input
           ref={inputRef}
-          className="slds-input"
+          className="slds-input slds-col slds-size_5-of-6"
           type="text"
-          placeholder="Add User's email who can access to Scratch orgs through backwindow"
+          placeholder="Add User's email or username who can access to Scratch orgs through backwindow"
           onKeyDown={onKeyDown}
         />
       </div>

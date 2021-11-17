@@ -20,7 +20,7 @@ function useCurrentUser() {
   return data;
 }
 
-async function createAllowedListEntry(entry: { email: string }) {
+async function createAllowedListEntry(entry: { provider: string, email: string }) {
   const res = await fetch("/org/allowedList", {
     method: "POST",
     headers: {
@@ -77,8 +77,8 @@ function useHubOrg() {
   }>("/org", fetcher);
   const { appClientId, allowedList = [] } = org ?? {};
   const onCreateAllowedEntry = useCallback(
-    async (email: string) => {
-      const entry = await createAllowedListEntry({ email });
+    async (provider: string, email: string) => {
+      const entry = await createAllowedListEntry({ provider, email });
       mutate({ ...org, allowedList: [...allowedList, entry] });
     },
     [org]

@@ -135,8 +135,8 @@ app.post("/org/allowedList", async (req, res) => {
       .json({ errors: [{ message: "Only HubOrg admin can access org info" }] });
     return;
   }
-  const { email } = req.body as { email?: string };
-  if (!email) {
+  const { provider, email } = req.body as { provider?: string, email?: string };
+  if (!provider || !email) {
     res
       .status(400)
       .json({ errors: [{ message: "Email is not found in input" }] });
@@ -154,6 +154,7 @@ app.post("/org/allowedList", async (req, res) => {
   const entry = await prisma.allowedEntry.create({
     data: {
       orgId: org.id,
+      provider,
       email: email.trim(),
     },
   });
