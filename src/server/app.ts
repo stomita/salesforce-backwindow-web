@@ -83,7 +83,7 @@ app.get("/org", async (req, res) => {
   if (sfOrgId == null) {
     res
       .status(403)
-      .json({ errors: [{ message: "Only HubOrg admin can access org info" }] });
+      .json({ errors: [{ message: "Only Org Admin can access org info" }] });
     return;
   }
   const org = await prisma.org.findUnique({
@@ -123,7 +123,7 @@ app.patch(
     const { sfOrgId } = req.session;
     if (sfOrgId == null) {
       res.status(403).json({
-        errors: [{ message: "Only HubOrg admin can access org info" }],
+        errors: [{ message: "Only Org Admin can access org info" }],
       });
       return;
     }
@@ -157,7 +157,7 @@ app.post(
     const { sfOrgId } = req.session;
     if (sfOrgId == null) {
       res.status(403).json({
-        errors: [{ message: "Only HubOrg admin can access org info" }],
+        errors: [{ message: "Only Org Admin can access org info" }],
       });
       return;
     }
@@ -203,7 +203,7 @@ app.delete(
     }
     if (sfOrgId == null) {
       res.status(403).json({
-        errors: [{ message: "Only HubOrg admin can access org info" }],
+        errors: [{ message: "Only Org Admin can access org info" }],
       });
       return;
     }
@@ -278,21 +278,17 @@ app.get(
       code
     );
     const { username } = await conn.identity();
-    let isDevhub = false;
-    try {
-      await conn.sobject("ScratchOrgInfo").describe();
-      isDevhub = true;
-    } catch (e) {
-      // skip
-    }
     const setting = await conn.request<{
       userSettings: { canModifyAllData: boolean };
     } | null>("/connect/organization");
-    let isAdmin = (isDevhub && setting?.userSettings.canModifyAllData) ?? false;
+    let isAdmin = setting?.userSettings.canModifyAllData ?? false;
     if (isAdmin) {
-      let org = await prisma.org.findUnique({
-        where: { sfOrgId },
-      });
+      const allowMultiOrg = process.env.ALLOW_MULTI_ORG;
+      let org = allowMultiOrg
+        ? await prisma.org.findUnique({
+            where: { sfOrgId },
+          })
+        : await prisma.org.findFirst();
       if (!org) {
         org = await prisma.org.create({
           data: {
@@ -305,10 +301,11 @@ app.get(
         res.redirect("/#error=org_creation_failure");
         return;
       }
-      if (org?.sfUserId !== sfUserId) {
+      if (org?.sfUserId === sfUserId) {
+        req.session.sfOrgId = sfOrgId;
+      } else {
         isAdmin = false;
       }
-      req.session.sfOrgId = sfOrgId;
     }
     req.session.uid = username;
     req.session.provider = "salesforce";
