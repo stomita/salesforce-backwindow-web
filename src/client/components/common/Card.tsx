@@ -22,7 +22,7 @@ export const Card = (props: CardProps) => {
           {icon ? (
             <div className="slds-media__figure">
               <span
-                className={`slds-icon_container slds-icon-standard-${icon}`}
+                className={`slds-icon_container slds-icon-standard-${icon.replace(/_/g, '-')}`}
                 title={title}
               >
                 <svg className="slds-icon slds-icon_small" aria-hidden="true">

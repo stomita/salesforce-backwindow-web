@@ -151,6 +151,37 @@ app.patch(
 /**
  *
  */
+app.delete("/org", async (req, res) => {
+  const { sfOrgId } = req.session;
+  if (sfOrgId == null) {
+    res.status(403).json({
+      errors: [{ message: "Only Org Admin can access org info" }],
+    });
+    return;
+  }
+  const org = await prisma.org.findUnique({
+    where: { sfOrgId },
+  });
+  if (!org) {
+    res
+      .status(404)
+      .json({ errors: [{ message: "Organization is not found" }] });
+    return;
+  }
+  await prisma.allowedEntry.deleteMany({
+    where: { orgId: org.id },
+  });
+  await prisma.org.delete({
+    where: { id: org.id },
+  });
+  req.session.uid = undefined;
+  req.session.sfOrgId = undefined;
+  res.status(204).end();
+});
+
+/**
+ *
+ */
 app.post(
   "/org/allowedList",
   async (req: Request<{}, {}, { provider?: string; email?: string }>, res) => {

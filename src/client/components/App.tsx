@@ -10,7 +10,10 @@ import { genid } from "../util";
 import { Button } from "./common/Button";
 import { Card } from "./common/Card";
 import { FormElement } from "./common/FormElement";
-import { GOOGLE_ICON_IMAGE_DATA_URL, SALESFORCE_ICON_IMAGE_DATA_URL } from "./const";
+import {
+  GOOGLE_ICON_IMAGE_DATA_URL,
+  SALESFORCE_ICON_IMAGE_DATA_URL,
+} from "./const";
 
 /**
  *
@@ -28,6 +31,7 @@ type AppProps = {
     appId: string;
     privateKey?: string;
   }) => void;
+  onUnregisterOrg: () => void;
   onLogin?: () => void;
   onLogout?: () => void;
 };
@@ -73,8 +77,12 @@ const AppHeader = (props: AppProps) => {
             </li>
             <li className="slds-global-actions__item">
               |{" "}
-              <a href="https://github.com/stomita/salesforce-backwindow-web" title="GitHub" target="_blank">
-                GitHub 
+              <a
+                href="https://github.com/stomita/salesforce-backwindow-web"
+                title="GitHub"
+                target="_blank"
+              >
+                GitHub
               </a>
             </li>
             {userId ? (
@@ -197,6 +205,7 @@ const AdminControlScreen = (props: AppProps) => {
     <>
       <ConnectedAppControl {...props} />
       <AllowedUserList {...props} />
+      <UnregisterOrgControl {...props} />
     </>
   );
 };
@@ -284,7 +293,7 @@ const AllowedUserList = (props: AppProps) => {
         const selectEl = selectRef.current;
         if (inputEl && selectEl) {
           const email = inputEl.value;
-          const provider = selectEl.value || 'google'
+          const provider = selectEl.value || "google";
           inputEl.value = "";
           onCreateAllowedEntry(provider, email);
         }
@@ -300,11 +309,15 @@ const AllowedUserList = (props: AppProps) => {
           className="slds-p-left_small slds-p-vertical_x-small"
         >
           <span className="slds-p-right_x-small">
-            { entry.provider === "google" ?
-              <img width={20} src={GOOGLE_ICON_IMAGE_DATA_URL} title="Google" /> :
-              entry.provider === "salesforce" ?
-              <img width={20} src={SALESFORCE_ICON_IMAGE_DATA_URL} title="Salesforce" /> :
-              undefined }
+            {entry.provider === "google" ? (
+              <img width={20} src={GOOGLE_ICON_IMAGE_DATA_URL} title="Google" />
+            ) : entry.provider === "salesforce" ? (
+              <img
+                width={20}
+                src={SALESFORCE_ICON_IMAGE_DATA_URL}
+                title="Salesforce"
+              />
+            ) : undefined}
           </span>
           <span>{entry.email}</span>
           <Button
@@ -317,7 +330,10 @@ const AllowedUserList = (props: AppProps) => {
         </div>
       ))}
       <div className="slds-p-vertical_x-small slds-grid">
-        <select ref={selectRef} className="slds-input slds-col slds-size_1-of-6">
+        <select
+          ref={selectRef}
+          className="slds-input slds-col slds-size_1-of-6"
+        >
           <option value="google">Google</option>
           <option value="salesforce">Salesforce</option>
         </select>
@@ -329,6 +345,35 @@ const AllowedUserList = (props: AppProps) => {
           onKeyDown={onKeyDown}
         />
       </div>
+    </Card>
+  );
+};
+
+/**
+ *
+ */
+const UnregisterOrgControl = (props: AppProps) => {
+  const { onUnregisterOrg } = props;
+  const onUnregister = useCallback(() => {
+    const ok = confirm(
+      "Are you sure you want to destroy org information in Backwindow ?"
+    );
+    if (ok) {
+      onUnregisterOrg();
+    }
+  }, [onUnregisterOrg]);
+  return (
+    <Card
+      icon="record_delete"
+      title="Unregister Org Information"
+      footer={
+        <Button variant="destructive" onClick={onUnregister}>
+          Unregister Org
+        </Button>
+      }
+    >
+      Unregister the org info in Backwindow. All configuration, key information
+      will be removed from the server.
     </Card>
   );
 };
@@ -393,7 +438,11 @@ const BackwindowUrlGenerator = (props: AppProps) => {
   params.append("un", username);
   params.append("ls", loginServer);
   const backwindowUrl = `${location.origin}/backwindow?${params.toString()}`;
-  const valid = hubOrgId.length === 18 && hubOrgId.startsWith('00D') && username && username.indexOf('@') > 0;
+  const valid =
+    hubOrgId.length === 18 &&
+    hubOrgId.startsWith("00D") &&
+    username &&
+    username.indexOf("@") > 0;
   return (
     <Card title="URL Generator">
       <FormElement label="DevHub Org ID (18 chars)">
@@ -422,9 +471,12 @@ const BackwindowUrlGenerator = (props: AppProps) => {
           <option value="sandbox">Sandbox</option>
         </select>
       </FormElement>
-      <FormElement className="slds-p-vertical_medium" label="Backwindow Login URL">
+      <FormElement
+        className="slds-p-vertical_medium"
+        label="Backwindow Login URL"
+      >
         <div className="slds-box slds-box_x-small">
-          {valid ? <a href={ backwindowUrl}>{backwindowUrl}</a> : backwindowUrl}
+          {valid ? <a href={backwindowUrl}>{backwindowUrl}</a> : backwindowUrl}
         </div>
       </FormElement>
     </Card>

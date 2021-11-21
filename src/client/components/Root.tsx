@@ -67,6 +67,15 @@ async function updateOrg(params: {
   return json;
 }
 
+async function destroyOrg() {
+  const res = await fetch("/org", {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    throw new Error(res.statusText);
+  }
+}
+
 /**
  *
  */
@@ -105,12 +114,17 @@ function useHubOrg() {
     },
     [org]
   );
+  const onUnregisterOrg = useCallback(async () => {
+    await destroyOrg();
+    destroyLoginSession();
+  }, []);
   return {
     appClientId,
     allowedList,
     onCreateAllowedEntry,
     onDeleteAllowedEntry,
     onUpdateConnectedApp,
+    onUnregisterOrg,
   };
 }
 
@@ -130,6 +144,7 @@ const Root = () => {
     onCreateAllowedEntry,
     onDeleteAllowedEntry,
     onUpdateConnectedApp,
+    onUnregisterOrg,
   } = useHubOrg();
   const hash = location.hash;
   const params = hash ? new URLSearchParams(hash.substring(1)) : null;
@@ -146,6 +161,7 @@ const Root = () => {
       onUpdateConnectedApp={onUpdateConnectedApp}
       onCreateAllowedEntry={onCreateAllowedEntry}
       onDeleteAllowedEntry={onDeleteAllowedEntry}
+      onUnregisterOrg={onUnregisterOrg}
       onLogin={loginToSalesforce}
       onLogout={destroyLoginSession}
     />
