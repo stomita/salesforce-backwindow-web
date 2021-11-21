@@ -1,26 +1,27 @@
-import React, { useCallback, useState } from "react";
+import React, { Suspense, useCallback, useState } from "react";
 import useSWR from "swr";
 import { AllowedEntry, Org } from ".prisma/client";
-import { App } from "./App";
+import { App, AppLoading } from "./App";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      return null;
+    }
     const error: any = new Error("An error occurred while fetching the data.");
     // Attach extra info to the error object.
     error.info = await res.json();
     error.status = res.status;
     throw error;
   }
-  return res.json();
+  return await res.json();
 };
 
-function useCurrentUser() {
-  const { data } = useSWR<{ uid: string; isAdmin: boolean }>("/me", fetcher);
-  return data;
-}
-
-async function createAllowedListEntry(entry: { provider: string, email: string }) {
+async function createAllowedListEntry(entry: {
+  provider: string;
+  email: string;
+}) {
   const res = await fetch("/org/allowedList", {
     method: "POST",
     headers: {
@@ -79,11 +80,19 @@ async function destroyOrg() {
 /**
  *
  */
+function useCurrentUser() {
+  const { data } = useSWR<{ uid: string; isAdmin: boolean }>("/me", fetcher, {
+    shouldRetryOnError: false,
+    suspense: true,
+  });
+  return data;
+}
+
 function useHubOrg() {
   const { data: org, mutate } = useSWR<{
     appClientId?: string;
     allowedList?: AllowedEntry[];
-  }>("/org", fetcher);
+  }>("/org", fetcher, { shouldRetryOnError: false, suspense: true });
   const { appClientId, allowedList = [] } = org ?? {};
   const onCreateAllowedEntry = useCallback(
     async (provider: string, email: string) => {
@@ -104,7 +113,7 @@ function useHubOrg() {
   );
   const onUpdateConnectedApp = useCallback(
     async (params: { appId: string; privateKey?: string }) => {
-      console.log('onUpdateConnectedApp', params);
+      console.log("onUpdateConnectedApp", params);
       const { appId: appClientId, privateKey: appPrivateKey } = params;
       await updateOrg({ appClientId, appPrivateKey });
       mutate({
@@ -136,7 +145,7 @@ function destroyLoginSession() {
   location.href = "/auth/logout";
 }
 
-const Root = () => {
+const AppContainer = () => {
   const { uid, isAdmin } = useCurrentUser() ?? {};
   const {
     appClientId,
@@ -167,5 +176,11 @@ const Root = () => {
     />
   );
 };
+
+const Root = () => (
+  <Suspense fallback={<AppLoading />}>
+    <AppContainer />
+  </Suspense>
+);
 
 export default Root;

@@ -521,6 +521,14 @@ const AppToast = (props: AppProps) => {
   );
 };
 
+export const AppLoading = () => (
+  <div role="status" className="slds-spinner slds-spinner_medium">
+    <span className="slds-assistive-text">Loading</span>
+    <div className="slds-spinner__dot-a"></div>
+    <div className="slds-spinner__dot-b"></div>
+  </div>
+);
+
 export const App = (props: AppProps) => {
   return (
     <>
