@@ -89,6 +89,7 @@ app.get("/org", async (req, res) => {
   const org = await prisma.org.findUnique({
     select: {
       id: true,
+      sfOrgId: true,
       appClientId: true,
       allowedList: true,
     },

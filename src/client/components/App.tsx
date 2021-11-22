@@ -1,6 +1,5 @@
 import React, {
   KeyboardEvent,
-  ReactNode,
   useCallback,
   useEffect,
   useRef,
@@ -21,6 +20,7 @@ import {
 type AppProps = {
   path?: string;
   userId?: string;
+  sfOrgId?: string;
   isAdmin?: boolean;
   error?: string;
   appId?: string;
@@ -203,10 +203,23 @@ const UserLoginPrompt = (props: AppProps) => {
 const AdminControlScreen = (props: AppProps) => {
   return (
     <>
+      <OrgInfoPanel {...props} />
       <ConnectedAppControl {...props} />
       <AllowedUserList {...props} />
       <UnregisterOrgControl {...props} />
     </>
+  );
+};
+
+/**
+ *
+ */
+const OrgInfoPanel = (props: AppProps) => {
+  const { sfOrgId } = props;
+  return (
+    <Card icon="employee_organization" title="Salesforce Organization">
+      <FormElement label="Salesforce Organization ID">{sfOrgId}</FormElement>
+    </Card>
   );
 };
 
@@ -430,7 +443,8 @@ const BackwindowUsage = () => (
  *
  */
 const BackwindowUrlGenerator = (props: AppProps) => {
-  const [hubOrgId, setHubOrgId] = useState("");
+  const { sfOrgId } = props;
+  const [hubOrgId, setHubOrgId] = useState(sfOrgId ?? "");
   const [username, setUsername] = useState("");
   const [loginServer, setLoginServer] = useState("sandbox");
   const params = new URLSearchParams();
@@ -443,6 +457,11 @@ const BackwindowUrlGenerator = (props: AppProps) => {
     hubOrgId.startsWith("00D") &&
     username &&
     username.indexOf("@") > 0;
+  useEffect(() => {
+    if (sfOrgId) {
+      setHubOrgId(sfOrgId);
+    }
+  }, [sfOrgId]);
   return (
     <Card title="URL Generator">
       <FormElement label="DevHub Org ID (18 chars)">

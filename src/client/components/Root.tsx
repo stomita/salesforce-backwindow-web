@@ -90,24 +90,29 @@ function useCurrentUser() {
 
 function useHubOrg() {
   const { data: org, mutate } = useSWR<{
+    sfOrgId: string;
     appClientId?: string;
     allowedList?: AllowedEntry[];
   }>("/org", fetcher, { shouldRetryOnError: false, suspense: true });
-  const { appClientId, allowedList = [] } = org ?? {};
+  const { sfOrgId, appClientId, allowedList = [] } = org ?? {};
   const onCreateAllowedEntry = useCallback(
     async (provider: string, email: string) => {
       const entry = await createAllowedListEntry({ provider, email });
-      mutate({ ...org, allowedList: [...allowedList, entry] });
+      if (org) {
+        mutate({ ...org, allowedList: [...allowedList, entry] });
+      }
     },
     [org]
   );
   const onDeleteAllowedEntry = useCallback(
     async (id: number) => {
       await deleteAllowedListEntry(id);
-      mutate({
-        ...org,
-        allowedList: allowedList.filter((entry) => entry.id !== id),
-      });
+      if (org) {
+        mutate({
+          ...org,
+          allowedList: allowedList.filter((entry) => entry.id !== id),
+        });
+      }
     },
     [org]
   );
@@ -116,10 +121,12 @@ function useHubOrg() {
       console.log("onUpdateConnectedApp", params);
       const { appId: appClientId, privateKey: appPrivateKey } = params;
       await updateOrg({ appClientId, appPrivateKey });
-      mutate({
-        ...org,
-        appClientId,
-      });
+      if (org) {
+        mutate({
+          ...org,
+          appClientId,
+        });
+      }
     },
     [org]
   );
@@ -128,6 +135,7 @@ function useHubOrg() {
     destroyLoginSession();
   }, []);
   return {
+    sfOrgId,
     appClientId,
     allowedList,
     onCreateAllowedEntry,
@@ -148,6 +156,7 @@ function destroyLoginSession() {
 const AppContainer = () => {
   const { uid, isAdmin } = useCurrentUser() ?? {};
   const {
+    sfOrgId,
     appClientId,
     allowedList,
     onCreateAllowedEntry,
@@ -163,6 +172,7 @@ const AppContainer = () => {
     <App
       path={path}
       userId={uid}
+      sfOrgId={sfOrgId}
       isAdmin={isAdmin}
       error={error}
       appId={appClientId}
