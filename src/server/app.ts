@@ -488,7 +488,6 @@ app.get(
           <form name="form1" method="POST" action="${loginUrl}">
             <input type="hidden" name="sid" value="${access_token}" />
             ${retURL ? `<input type="hidden" name="retURL" value="${retURL}" />` : ''}
-            <input type="submit" value="Login" />
           </form>
         </body></html>
       `);
