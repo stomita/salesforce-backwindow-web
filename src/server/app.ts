@@ -416,11 +416,12 @@ app.get(
         hub?: string;
         un?: string;
         ls?: string;
+        retURL?: string;
       }
     >,
     res
   ) => {
-    const { hub: sfOrgId, un: username, ls: login = "production" } = req.query;
+    const { hub: sfOrgId, un: username, ls: login = "production", retURL } = req.query;
     const { uid, provider } = req.session;
     if (!uid || !provider) {
       req.session.redirectPath = req.originalUrl;
@@ -481,9 +482,16 @@ app.get(
         return;
       }
       const { access_token, instance_url } = result.data;
-      const loginUrl =
-        instance_url + "/secur/frontdoor.jsp?sid=" + access_token;
-      res.redirect(loginUrl);
+      const loginUrl = instance_url + "/secur/frontdoor.jsp";
+      res.contentType('html').send(`
+        <html><body onload="document.form1.submit()">
+          <form name="form1" method="POST" action="${loginUrl}">
+            <input type="hidden" name="sid" value="${access_token}" />
+            ${retURL ? `<input type="hidden" name="retURL" value="${retURL}" />` : ''}
+            <input type="submit" value="Login" />
+          </form>
+        </body></html>
+      `);
     } catch (e) {
       console.error((e as any).response?.data);
       res.status(500).send((e as any).response?.data?.error_description);
