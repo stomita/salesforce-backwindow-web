@@ -150,26 +150,35 @@ const SalesforceLoginButton = ({ onLogin }: AppProps) => (
   </div>
 );
 
-const GoogleLoginButton = () => (
-  <div className="slds-p-vertical_small">
-    <div
-      id="g_id_onload"
-      data-client_id={process.env.GL_BACKWINDOW_CLIENT_ID}
-      data-login_uri={process.env.GL_BACKWINDOW_REDIRECT_URI}
-      data-auto_prompt="false"
-      data-ux_mode="redirect"
-    ></div>
-    <div
-      className="g_id_signin"
-      data-type="standard"
-      data-size="large"
-      data-theme="outline"
-      data-text="sign_in_with"
-      data-shape="rectangular"
-      data-logo_alignment="left"
-    ></div>
-  </div>
-);
+const GoogleLoginButton = () => {
+  useEffect(() => {
+    const s = document.createElement("script");
+    s.src = "https://accounts.google.com/gsi/client";
+    s.async = true;
+    s.defer = true;
+    document.body.appendChild(s);
+  }, []);
+  return (
+    <div className="slds-p-vertical_small">
+      <div
+        id="g_id_onload"
+        data-client_id={process.env.GL_BACKWINDOW_CLIENT_ID}
+        data-login_uri={process.env.GL_BACKWINDOW_REDIRECT_URI}
+        data-auto_prompt="false"
+        data-ux_mode="redirect"
+      ></div>
+      <div
+        className="g_id_signin"
+        data-type="standard"
+        data-size="large"
+        data-theme="outline"
+        data-text="sign_in_with"
+        data-shape="rectangular"
+        data-logo_alignment="left"
+      ></div>
+    </div>
+  );
+};
 
 const AdminLoginPrompt = (props: AppProps) => {
   return (
