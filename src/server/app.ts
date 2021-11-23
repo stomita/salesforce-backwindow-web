@@ -421,14 +421,42 @@ app.get(
     >,
     res
   ) => {
-    const { hub: sfOrgId, un: username, ls: login = "production", retURL } = req.query;
+    const {
+      hub: sfOrgId,
+      un: username,
+      ls: login = "production",
+      retURL,
+    } = req.query;
     const { uid, provider } = req.session;
     if (!uid || !provider) {
+      console.log(
+        [
+          "status:authentication_required",
+          `hub:${sfOrgId}`,
+          `username:${username}`,
+          `ls:${login}`,
+        ].join("\t")
+      );
       req.session.redirectPath = req.originalUrl;
       res.redirect("/");
       return;
     }
-    if (!sfOrgId || !username) {
+    if (
+      !sfOrgId ||
+      !username ||
+      (retURL && !/^\/[\w\-:\/?#\[\]@!$&'\(\)*+,;=%]+$/.test(retURL))
+    ) {
+      console.error(
+        [
+          "error:invalid_backwindow_parameter",
+          `provider:${provider}`,
+          `uid:${uid}`,
+          `hub:${sfOrgId}`,
+          `username:${username}`,
+          `ls:${login}`,
+          `retURL:${retURL}`,
+        ].join("\t")
+      );
       res.status(400).send("invalid_backwindow_parameter");
       return;
     }
@@ -437,11 +465,31 @@ app.get(
       include: { allowedList: true },
     });
     if (!org) {
+      console.error(
+        [
+          "error:hub_org_not_found",
+          `provider:${provider}`,
+          `uid:${uid}`,
+          `hub:${sfOrgId}`,
+          `username:${username}`,
+          `ls:${login}`,
+        ].join("\t")
+      );
       res.status(404).send("hub_org_not_found");
       return;
     }
     const { appClientId, appPrivateKey, allowedList } = org;
     if (!appClientId || !appPrivateKey) {
+      console.error(
+        [
+          "error:invalid_connected_app_config",
+          `provider:${provider}`,
+          `uid:${uid}`,
+          `hub:${sfOrgId}`,
+          `username:${username}`,
+          `ls:${login}`,
+        ].join("\t")
+      );
       res.status(500).send("invalid_connected_app_config");
       return;
     }
@@ -453,6 +501,16 @@ app.get(
       }
     }
     if (!isAllowed) {
+      console.error(
+        [
+          "error:access_not_allowed",
+          `provider:${provider}`,
+          `uid:${uid}`,
+          `hub:${sfOrgId}`,
+          `username:${username}`,
+          `ls:${login}`,
+        ].join("\t")
+      );
       res.status(403).send("access_not_allowed");
       return;
     }
@@ -478,22 +536,56 @@ app.get(
         instance_url: string;
       }>(tokenEndpointUrl, params);
       if (result.status !== 200) {
+        console.error(
+          [
+            `error:${result.statusText}`,
+            `provider:${provider}`,
+            `uid:${uid}`,
+            `hub:${sfOrgId}`,
+            `username:${username}`,
+            `ls:${login}`,
+          ].join("\t")
+        );
         res.status(result.status).send(result.statusText);
         return;
       }
       const { access_token, instance_url } = result.data;
       const loginUrl = instance_url + "/secur/frontdoor.jsp";
-      res.contentType('html').send(`
+      console.log(
+        [
+          `status:login_to_org`,
+          `provider:${provider}`,
+          `uid:${uid}`,
+          `hub:${sfOrgId}`,
+          `username:${username}`,
+          `ls:${login}`,
+        ].join("\t")
+      );
+      res.contentType("html").send(`
         <html><body onload="document.form1.submit()">
           <form name="form1" method="POST" action="${loginUrl}">
             <input type="hidden" name="sid" value="${access_token}" />
-            ${retURL ? `<input type="hidden" name="retURL" value="${retURL}" />` : ''}
+            ${
+              retURL
+                ? `<input type="hidden" name="retURL" value="${retURL}" />`
+                : ""
+            }
           </form>
         </body></html>
       `);
     } catch (e) {
-      console.error((e as any).response?.data);
-      res.status(500).send((e as any).response?.data?.error_description);
+      const error_description = (e as any).response?.data?.error_description
+      console.error(
+        [
+          `error:${error_description}`,
+          `provider:${provider}`,
+          `uid:${uid}`,
+          `hub:${sfOrgId}`,
+          `username:${username}`,
+          `ls:${login}`,
+        ].join("\t")
+      );
+      res.status(500).send(error_description);
       return;
     }
   }
