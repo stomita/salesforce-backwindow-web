@@ -16,12 +16,6 @@ const SF_BACKWINDOW_CLIENT_ID = process.env.SF_BACKWINDOW_CLIENT_ID ?? "";
 const SF_BACKWINDOW_CLIENT_SECRET =
   process.env.SF_BACKWINDOW_CLIENT_SECRET ?? "";
 const SF_BACKWINDOW_REDIRECT_URI = process.env.SF_BACKWINDOW_REDIRECT_URI ?? "";
-const SF_BACKWINDOW_PRIVATE_KEY_BASE64 =
-  process.env.SF_BACKWINDOW_PRIVATE_KEY_BASE64 ?? "";
-const SF_BACKWINDOW_PRIVATE_KEY = Buffer.from(
-  SF_BACKWINDOW_PRIVATE_KEY_BASE64,
-  "base64"
-).toString("ascii");
 
 const GL_BACKWINDOW_CLIENT_ID = process.env.GL_BACKWINDOW_CLIENT_ID ?? "";
 
@@ -29,6 +23,14 @@ const GL_BACKWINDOW_CLIENT_ID = process.env.GL_BACKWINDOW_CLIENT_ID ?? "";
  *
  */
 const SF_DEVHUB_ORG_ID = process.env.SF_DEVHUB_ORG_ID ?? "";
+const SF_DEVHUB_CLIENT_ID = process.env.SF_AUTH_CLIENT_ID ?? "";
+const SF_DEVHUB_PRIVATE_KEY_BASE64 =
+  process.env.SF_DEVHUB_PRIVATE_KEY_BASE64 ?? "";
+const SF_DEVHUB_PRIVATE_KEY = Buffer.from(
+  SF_DEVHUB_PRIVATE_KEY_BASE64,
+  "base64"
+).toString("ascii");
+
 
 const ALLOWED_USER_EMAILS = (process.env.ALLOWED_USER_EMAILS ?? "").split(
   /\s*,\s*/
@@ -37,8 +39,8 @@ const ALLOWED_USER_EMAILS = (process.env.ALLOWED_USER_EMAILS ?? "").split(
 const devHubOrgInfo = {
   id: SF_DEVHUB_ORG_ID,
   sfOrgId: SF_DEVHUB_ORG_ID,
-  appClientId: SF_BACKWINDOW_CLIENT_ID,
-  appPrivateKey: SF_BACKWINDOW_PRIVATE_KEY,
+  appClientId: SF_DEVHUB_CLIENT_ID,
+  appPrivateKey: SF_DEVHUB_PRIVATE_KEY,
   allowedList: ALLOWED_USER_EMAILS.map((email) => ({
     id: email,
     provider: "google",
