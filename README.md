@@ -44,6 +44,7 @@ In the Config vars section, you need to enter the values got from the previous s
 - **SF_BACKWINDOW_CLIENT_ID**: Client ID obtained in Salesforce connected app registration.
 - **SF_BACKWINDOW_CLIENT_SECRET**: Client secret obtained in Salesforce connected app registration.
 - **SF_BACKWINDOW_REDIRECT_URI**: Callback URL registered in the Salesforce connected app.
+- **SF_DEVHUB_ORG_ID**: Your Salesforce DevHub Org's organization ID.
 - **SF_DEVHUB_CLIENT_ID** : Your Salesforce connected app client ID for DevHub authentication.
 - **SF_DEVHUB_PRIVATE_KEY_BASE64**: Private key of the cert in the connected app for DevHub JWT authentication, encoded in base64. To encode a key file to base64, execute `openssl base64 -A ./path/to/server.key`. 
 - **ALLOWED_USER_EMAILS**: List Google accounts (email addresses) in comma-separated, that are allowed to use the backwindow app to login to scratch orgs.
