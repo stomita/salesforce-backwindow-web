@@ -23,7 +23,7 @@ const GL_BACKWINDOW_CLIENT_ID = process.env.GL_BACKWINDOW_CLIENT_ID ?? "";
  *
  */
 const SF_DEVHUB_ORG_ID = process.env.SF_DEVHUB_ORG_ID ?? "";
-const SF_DEVHUB_CLIENT_ID = process.env.SF_AUTH_CLIENT_ID ?? "";
+const SF_DEVHUB_CLIENT_ID = process.env.SF_DEVHUB_CLIENT_ID ?? "";
 const SF_DEVHUB_PRIVATE_KEY_BASE64 =
   process.env.SF_DEVHUB_PRIVATE_KEY_BASE64 ?? "";
 const SF_DEVHUB_PRIVATE_KEY = Buffer.from(
