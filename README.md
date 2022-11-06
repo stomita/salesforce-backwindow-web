@@ -22,7 +22,7 @@ In order to run the backwindow app as your own app, you need to setup Google Sig
 
 The origins and callback URLs(redirect URIs) must match the deploying app URL, which will be `https://<your-app-name>.herokuapp.com` by default.
 
-## Setup JWT Bearer Flow
+### Setup JWT Bearer Flow
 
 You need to enable JWT bearer flow in your DevHub org. See the link below to enable the JWT grant.
 
