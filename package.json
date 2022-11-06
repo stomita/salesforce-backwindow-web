@@ -18,14 +18,10 @@
     "build:server": "esbuild src/server/app.ts --bundle --platform=node --target=node14 --outdir=lib/server",
     "watch": "npm run build:client watch",
     "typecheck": "tsc --noEmit",
-    "db:start": "docker-compose up",
-    "db:shutdown": "docker-compose down",
-    "db:cleanup": "docker-compose down --volumes",
     "postinstall": "npm run build"
   },
   "devDependencies": {},
   "dependencies": {
-    "@prisma/client": "3.5.0",
     "@salesforce-ux/design-system": "^2.16.2",
     "@types/axios": "^0.14.0",
     "@types/cookie-parser": "^1.4.2",
@@ -45,7 +41,6 @@
     "jsforce": "^2.0.0-beta.8",
     "jsonwebtoken": "^8.5.1",
     "npm-run-all": "^4.1.5",
-    "prisma": "3.5.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "rimraf": "^3.0.2",

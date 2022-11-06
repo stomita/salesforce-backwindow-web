@@ -1,10 +1,9 @@
 import crypto from "crypto";
 import express, { Request } from "express";
-import session, { SessionData } from "express-session";
+import session from "express-session";
 import cookieParser from "cookie-parser";
 import jsonwebtoken from "jsonwebtoken";
 import axios from "axios";
-import { PrismaClient } from "@prisma/client";
 import { Connection, OAuth2 as SfOAuth2 } from "jsforce";
 import { OAuth2Client as GlOAuth2Client } from "google-auth-library";
 
@@ -17,8 +16,35 @@ const SF_BACKWINDOW_CLIENT_ID = process.env.SF_BACKWINDOW_CLIENT_ID ?? "";
 const SF_BACKWINDOW_CLIENT_SECRET =
   process.env.SF_BACKWINDOW_CLIENT_SECRET ?? "";
 const SF_BACKWINDOW_REDIRECT_URI = process.env.SF_BACKWINDOW_REDIRECT_URI ?? "";
+const SF_BACKWINDOW_PRIVATE_KEY_BASE64 =
+  process.env.SF_BACKWINDOW_PRIVATE_KEY_BASE64 ?? "";
+const SF_BACKWINDOW_PRIVATE_KEY = Buffer.from(
+  SF_BACKWINDOW_PRIVATE_KEY_BASE64,
+  "base64"
+).toString("ascii");
 
 const GL_BACKWINDOW_CLIENT_ID = process.env.GL_BACKWINDOW_CLIENT_ID ?? "";
+
+/**
+ *
+ */
+const SF_DEVHUB_ORG_ID = process.env.SF_DEVHUB_ORG_ID ?? "";
+
+const ALLOWED_USER_EMAILS = (process.env.ALLOWED_USER_EMAILS ?? "").split(
+  /\s*,\s*/
+);
+
+const devHubOrgInfo = {
+  id: SF_DEVHUB_ORG_ID,
+  sfOrgId: SF_DEVHUB_ORG_ID,
+  appClientId: SF_BACKWINDOW_CLIENT_ID,
+  appPrivateKey: SF_BACKWINDOW_PRIVATE_KEY,
+  allowedList: ALLOWED_USER_EMAILS.map((email) => ({
+    id: email,
+    provider: "google",
+    email,
+  })),
+};
 
 const sfOAuth2 = new SfOAuth2({
   loginUrl: SF_LOGIN_URL,
@@ -27,8 +53,6 @@ const sfOAuth2 = new SfOAuth2({
   redirectUri: SF_BACKWINDOW_REDIRECT_URI,
 });
 const glOAuth2 = new GlOAuth2Client(GL_BACKWINDOW_CLIENT_ID);
-
-const prisma = new PrismaClient();
 
 /**
  *
@@ -86,15 +110,7 @@ app.get("/org", async (req, res) => {
       .json({ errors: [{ message: "Only Org Admin can access org info" }] });
     return;
   }
-  const org = await prisma.org.findUnique({
-    select: {
-      id: true,
-      sfOrgId: true,
-      appClientId: true,
-      allowedList: true,
-    },
-    where: { sfOrgId },
-  });
+  const org = sfOrgId === devHubOrgInfo.sfOrgId ? devHubOrgInfo : null;
   if (!org) {
     res
       .status(404)
@@ -107,168 +123,50 @@ app.get("/org", async (req, res) => {
 /**
  *
  */
-app.patch(
-  "/org",
-  async (
-    req: Request<
-      {},
-      {},
-      {
-        appClientId?: string;
-        appPrivateKey?: string;
-      }
-    >,
-    res
-  ) => {
-    const { appClientId, appPrivateKey } = req.body;
-    const { sfOrgId } = req.session;
-    if (sfOrgId == null) {
-      res.status(403).json({
-        errors: [{ message: "Only Org Admin can access org info" }],
-      });
-      return;
-    }
-    const org = await prisma.org.findUnique({
-      where: { sfOrgId },
-      include: { allowedList: true },
-    });
-    if (!org) {
-      res
-        .status(404)
-        .json({ errors: [{ message: "Organization is not found" }] });
-      return;
-    }
-    const uorg = await prisma.org.update({
-      data: {
-        ...(appClientId ? { appClientId } : {}),
-        ...(appPrivateKey ? { appPrivateKey } : {}),
-      },
-      where: { id: org.id },
-    });
-    res.json(uorg);
-  }
-);
-
-/**
- *
- */
-app.delete("/org", async (req, res) => {
-  const { sfOrgId } = req.session;
-  if (sfOrgId == null) {
-    res.status(403).json({
-      errors: [{ message: "Only Org Admin can access org info" }],
-    });
-    return;
-  }
-  const org = await prisma.org.findUnique({
-    where: { sfOrgId },
+app.patch("/org", async (req, res) => {
+  res.status(403).json({
+    errors: [
+      { message: "You cannot modify the org info. Use env variable instead." },
+    ],
   });
-  if (!org) {
-    res
-      .status(404)
-      .json({ errors: [{ message: "Organization is not found" }] });
-    return;
-  }
-  await prisma.allowedEntry.deleteMany({
-    where: { orgId: org.id },
-  });
-  await prisma.org.delete({
-    where: { id: org.id },
-  });
-  req.session.uid = undefined;
-  req.session.sfOrgId = undefined;
-  res.status(204).end();
 });
 
 /**
  *
  */
-app.post(
-  "/org/allowedList",
-  async (req: Request<{}, {}, { provider?: string; email?: string }>, res) => {
-    const { sfOrgId } = req.session;
-    if (sfOrgId == null) {
-      res.status(403).json({
-        errors: [{ message: "Only Org Admin can access org info" }],
-      });
-      return;
-    }
-    const { provider, email } = req.body;
-    if (!provider || !email) {
-      res
-        .status(400)
-        .json({ errors: [{ message: "Email is not found in input" }] });
-      return;
-    }
-    const org = await prisma.org.findUnique({
-      where: { sfOrgId },
-    });
-    if (!org) {
-      res
-        .status(404)
-        .json({ errors: [{ message: "Organization is not found" }] });
-      return;
-    }
-    const entry = await prisma.allowedEntry.create({
-      data: {
-        orgId: org.id,
-        provider,
-        email: email.trim(),
-      },
-    });
-    res.json(entry);
-  }
-);
+app.delete("/org", async (req, res) => {
+  res.status(403).json({
+    errors: [{ message: "You cannot delete the org info." }],
+  });
+});
 
 /**
  *
  */
-app.delete(
-  "/org/allowedList/:entryId",
-  async (req: Request<{ entryId: string }>, res) => {
-    const { sfOrgId } = req.session;
-    const { entryId: entryIdStr } = req.params;
-    const entryId = Number(entryIdStr);
-    if (Number.isNaN(entryId)) {
-      res.status(404).json({ errors: [{ message: "Invalid entry id" }] });
-      return;
-    }
-    if (sfOrgId == null) {
-      res.status(403).json({
-        errors: [{ message: "Only Org Admin can access org info" }],
-      });
-      return;
-    }
-    const org = await prisma.org.findUnique({
-      where: { sfOrgId },
-    });
-    if (!org) {
-      res
-        .status(404)
-        .json({ errors: [{ message: "Organization is not found" }] });
-      return;
-    }
-    const entry = await prisma.allowedEntry.findUnique({
-      select: {
-        id: true,
-        org: {
-          select: {
-            sfOrgId: true,
-          },
-        },
+app.post("/org/allowedList", (req, res) => {
+  res.status(403).json({
+    errors: [
+      {
+        message:
+          "You cannot add list entry from API. Use env variable instead.",
       },
-      where: {
-        id: entryId,
+    ],
+  });
+});
+
+/**
+ *
+ */
+app.delete("/org/allowedList/:entryId", async (req, res) => {
+  res.status(403).json({
+    errors: [
+      {
+        message:
+          "You cannot delete list entry from API. Use env variable instead.",
       },
-    });
-    if (!entry || entry.org.sfOrgId !== sfOrgId) {
-      res.status(404).json({ errors: [{ message: "Entry is not found" }] });
-      return;
-    }
-    await prisma.allowedEntry.delete({ where: { id: entry.id } });
-    res.status(204).end();
-  }
-);
+    ],
+  });
+});
 
 /**
  *
@@ -315,25 +213,7 @@ app.get(
     } | null>("/connect/organization");
     let isAdmin = setting?.userSettings.canModifyAllData ?? false;
     if (isAdmin) {
-      const allowMultiOrg = process.env.ALLOW_MULTI_ORG;
-      let org = allowMultiOrg
-        ? await prisma.org.findUnique({
-            where: { sfOrgId },
-          })
-        : await prisma.org.findFirst();
-      if (!org) {
-        org = await prisma.org.create({
-          data: {
-            sfOrgId,
-            sfUserId,
-          },
-        });
-      }
-      if (!org) {
-        res.redirect("/#error=org_creation_failure");
-        return;
-      }
-      if (org?.sfUserId === sfUserId) {
+      if (devHubOrgInfo.sfOrgId === sfOrgId) {
         req.session.sfOrgId = sfOrgId;
       } else {
         isAdmin = false;
@@ -460,10 +340,7 @@ app.get(
       res.status(400).send("invalid_backwindow_parameter");
       return;
     }
-    const org = await prisma.org.findUnique({
-      where: { sfOrgId },
-      include: { allowedList: true },
-    });
+    const org = sfOrgId === devHubOrgInfo.sfOrgId ? devHubOrgInfo : null;
     if (!org) {
       console.error(
         [
@@ -479,20 +356,6 @@ app.get(
       return;
     }
     const { appClientId, appPrivateKey, allowedList } = org;
-    if (!appClientId || !appPrivateKey) {
-      console.error(
-        [
-          "error:invalid_connected_app_config",
-          `provider:${provider}`,
-          `uid:${uid}`,
-          `hub:${sfOrgId}`,
-          `username:${username}`,
-          `ls:${login}`,
-        ].join("\t")
-      );
-      res.status(500).send("invalid_connected_app_config");
-      return;
-    }
     let isAllowed = false;
     for (const entry of allowedList) {
       if (entry.email === uid && entry.provider === provider) {
@@ -574,7 +437,7 @@ app.get(
         </body></html>
       `);
     } catch (e) {
-      const error_description = (e as any).response?.data?.error_description
+      const error_description = (e as any).response?.data?.error_description;
       console.error(
         [
           `error:${error_description}`,
