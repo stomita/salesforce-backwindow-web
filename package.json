@@ -1,6 +1,6 @@
 {
   "name": "salesforce-backwindow-web",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A Salesforce login service that allows multiple users to sign in to multiple orgs without sharing any credentials or passwords",
   "private": true,
   "author": {
