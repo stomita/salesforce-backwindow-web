@@ -440,6 +440,7 @@ app.get(
       `);
     } catch (e) {
       const error_description = (e as any).response?.data?.error_description;
+      console.error(JSON.stringify((e as any).response, null, 2));
       console.error(
         [
           `error:${error_description}`,
