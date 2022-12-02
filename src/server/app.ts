@@ -439,8 +439,9 @@ app.get(
         </body></html>
       `);
     } catch (e) {
+      console.error(tokenEndpointUrl, params);
+      console.error((e as any).response?.data);
       const error_description = (e as any).response?.data?.error_description;
-      console.error((e as any).response);
       console.error(
         [
           `error:${error_description}`,
