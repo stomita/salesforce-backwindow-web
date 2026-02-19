@@ -6,6 +6,7 @@ import jsonwebtoken from "jsonwebtoken";
 import axios from "axios";
 import { Connection, OAuth2 as SfOAuth2 } from "jsforce";
 import { OAuth2Client as GlOAuth2Client } from "google-auth-library";
+import jwksRsa from "jwks-rsa";
 
 /**
  *
@@ -18,6 +19,11 @@ const SF_BACKWINDOW_CLIENT_SECRET =
 const SF_BACKWINDOW_REDIRECT_URI = process.env.SF_BACKWINDOW_REDIRECT_URI ?? "";
 
 const GL_BACKWINDOW_CLIENT_ID = process.env.GL_BACKWINDOW_CLIENT_ID ?? "";
+
+const GH_OIDC_AUDIENCE = process.env.GH_OIDC_AUDIENCE ?? "";
+const GH_OIDC_ALLOWED_REPOS = (process.env.GH_OIDC_ALLOWED_REPOS ?? "")
+  .split(/\s*,\s*/)
+  .filter(Boolean);
 
 /**
  *
@@ -41,11 +47,18 @@ const devHubOrgInfo = {
   sfOrgId: SF_DEVHUB_ORG_ID,
   appClientId: SF_DEVHUB_CLIENT_ID,
   appPrivateKey: SF_DEVHUB_PRIVATE_KEY,
-  allowedList: ALLOWED_USER_EMAILS.map((email) => ({
-    id: email,
-    provider: "google",
-    email,
-  })),
+  allowedList: [
+    ...ALLOWED_USER_EMAILS.map((email) => ({
+      id: email,
+      provider: "google",
+      email,
+    })),
+    ...GH_OIDC_ALLOWED_REPOS.map((repo) => ({
+      id: `github:${repo}`,
+      provider: "github",
+      email: repo,
+    })),
+  ],
 };
 
 const sfOAuth2 = new SfOAuth2({
@@ -55,6 +68,46 @@ const sfOAuth2 = new SfOAuth2({
   redirectUri: SF_BACKWINDOW_REDIRECT_URI,
 });
 const glOAuth2 = new GlOAuth2Client(GL_BACKWINDOW_CLIENT_ID);
+
+const ghJwksClient = jwksRsa({
+  jwksUri: "https://token.actions.githubusercontent.com/.well-known/jwks",
+  cache: true,
+  cacheMaxAge: 600000, // 10 minutes
+  rateLimit: true,
+  jwksRequestsPerMinute: 10,
+});
+
+const GITHUB_OIDC_ISSUER = "https://token.actions.githubusercontent.com";
+
+function verifyGitHubOIDCToken(idToken: string): Promise<{
+  sub: string;
+  repository: string;
+  actor: string;
+}> {
+  return new Promise((resolve, reject) => {
+    jsonwebtoken.verify(
+      idToken,
+      (header, callback) => {
+        if (!header.kid) {
+          return callback(new Error("Missing kid in token header"));
+        }
+        ghJwksClient.getSigningKey(header.kid, (err, key) => {
+          if (err) return callback(err);
+          callback(null, key?.getPublicKey());
+        });
+      },
+      {
+        issuer: GITHUB_OIDC_ISSUER,
+        audience: GH_OIDC_AUDIENCE,
+        algorithms: ["RS256"],
+      },
+      (err, decoded) => {
+        if (err) return reject(err);
+        resolve(decoded as any);
+      }
+    );
+  });
+}
 
 /**
  *
@@ -274,6 +327,35 @@ app.post(
     }
   }
 );
+
+/**
+ *
+ */
+app.post("/auth/github", async (req: Request<{}, {}, { id_token?: string }>, res) => {
+  const { id_token: idToken } = req.body;
+  if (!idToken) {
+    res.status(400).json({ error: "missing_id_token" });
+    return;
+  }
+  if (!GH_OIDC_AUDIENCE) {
+    res.status(400).json({ error: "github_oidc_not_configured" });
+    return;
+  }
+  try {
+    const payload = await verifyGitHubOIDCToken(idToken);
+    const { repository, actor, sub } = payload;
+    if (!GH_OIDC_ALLOWED_REPOS.includes(repository)) {
+      res.status(403).json({ error: "repository_not_allowed" });
+      return;
+    }
+    req.session.uid = repository;
+    req.session.provider = "github";
+    req.session.isAdmin = false;
+    res.json({ uid: repository, provider: "github" });
+  } catch (e) {
+    res.status(401).json({ error: "invalid_token", message: (e as Error).message });
+  }
+});
 
 /**
  *
