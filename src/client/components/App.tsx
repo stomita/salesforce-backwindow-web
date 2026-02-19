@@ -193,6 +193,53 @@ const AdminLoginPrompt = (props: AppProps) => {
 /**
  *
  */
+const ApiKeyLoginForm = () => {
+  const [apiKey, setApiKey] = useState("");
+  const [error, setError] = useState("");
+  const onSubmit = useCallback(async () => {
+    setError("");
+    const res = await fetch("/auth/apikey", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: apiKey }),
+    });
+    if (res.ok) {
+      location.reload();
+    } else {
+      const data = await res.json();
+      setError(data.error ?? "Login failed");
+    }
+  }, [apiKey]);
+  return (
+    <div className="slds-p-vertical_small">
+      <div className="slds-form-element">
+        <label className="slds-form-element__label">API Key</label>
+        <div className="slds-form-element__control slds-grid">
+          <input
+            type="password"
+            className="slds-input slds-col"
+            placeholder="Enter API Key"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+          />
+          <Button
+            className="slds-m-left_x-small"
+            variant="brand"
+            onClick={onSubmit}
+          >
+            Login
+          </Button>
+        </div>
+        {error ? (
+          <div className="slds-form-element__help slds-text-color_error">
+            {error}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
 const UserLoginPrompt = (props: AppProps) => {
   return (
     <Card icon="user" title="Login">
@@ -200,6 +247,7 @@ const UserLoginPrompt = (props: AppProps) => {
         <div>
           <GoogleLoginButton />
           <SalesforceLoginButton {...props} />
+          <ApiKeyLoginForm />
         </div>
       </div>
     </Card>
