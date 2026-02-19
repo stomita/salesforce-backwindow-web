@@ -25,6 +25,8 @@ const GH_OIDC_ALLOWED_REPOS = (process.env.GH_OIDC_ALLOWED_REPOS ?? "")
   .split(/\s*,\s*/)
   .filter(Boolean);
 
+const AGENT_API_KEY = process.env.AGENT_API_KEY ?? "";
+
 /**
  *
  */
@@ -58,6 +60,9 @@ const devHubOrgInfo = {
       provider: "github",
       email: repo,
     })),
+    ...(AGENT_API_KEY
+      ? [{ id: "apikey:agent", provider: "apikey", email: "agent" }]
+      : []),
   ],
 };
 
@@ -355,6 +360,29 @@ app.post("/auth/github", async (req: Request<{}, {}, { id_token?: string }>, res
   } catch (e) {
     res.status(401).json({ error: "invalid_token", message: (e as Error).message });
   }
+});
+
+/**
+ *
+ */
+app.post("/auth/apikey", async (req: Request<{}, {}, { api_key?: string }>, res) => {
+  const { api_key: apiKey } = req.body;
+  if (!apiKey) {
+    res.status(400).json({ error: "missing_api_key" });
+    return;
+  }
+  if (!AGENT_API_KEY) {
+    res.status(400).json({ error: "apikey_auth_not_configured" });
+    return;
+  }
+  if (apiKey !== AGENT_API_KEY) {
+    res.status(401).json({ error: "invalid_api_key" });
+    return;
+  }
+  req.session.uid = "agent";
+  req.session.provider = "apikey";
+  req.session.isAdmin = false;
+  res.json({ uid: "agent", provider: "apikey" });
 });
 
 /**
