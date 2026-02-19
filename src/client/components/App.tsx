@@ -205,7 +205,9 @@ const ApiKeyLoginForm = () => {
       body: JSON.stringify({ api_key: apiKey }),
     });
     if (res.ok) {
-      location.reload();
+      const data = await res.json();
+      location.href = data.redirectPath ?? "/";
+      return;
     } else {
       const data = await res.json();
       setError(data.error ?? "Login failed");

@@ -382,7 +382,8 @@ app.post("/auth/apikey", async (req: Request<{}, {}, { api_key?: string }>, res)
   req.session.uid = "agent";
   req.session.provider = "apikey";
   req.session.isAdmin = false;
-  res.json({ uid: "agent", provider: "apikey" });
+  const { redirectPath } = req.session;
+  res.json({ uid: "agent", provider: "apikey", redirectPath: redirectPath ?? "/" });
 });
 
 /**
