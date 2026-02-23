@@ -190,83 +190,6 @@ const AdminLoginPrompt = (props: AppProps) => {
   );
 };
 
-/**
- *
- */
-const ApiKeyLoginForm = () => {
-  const [shown, setShown] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [error, setError] = useState("");
-  const onSubmit = useCallback(async () => {
-    setError("");
-    const res = await fetch("/auth/apikey", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ api_key: apiKey }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      location.href = data.redirectPath ?? "/";
-      return;
-    } else {
-      const data = await res.json();
-      setError(data.error ?? "Login failed");
-    }
-  }, [apiKey]);
-  if (!shown) {
-    return (
-      <div className="slds-p-vertical_small">
-        <a
-          href="#"
-          role="button"
-          aria-label="Sign in with API Key"
-          data-testid="apikey-login-link"
-          onClick={(e) => {
-            e.preventDefault();
-            setShown(true);
-          }}
-        >
-          Sign in with API Key
-        </a>
-      </div>
-    );
-  }
-  return (
-    <div className="slds-p-vertical_small" data-testid="apikey-login-form">
-      <div className="slds-form-element">
-        <label className="slds-form-element__label" htmlFor="apikey-input">
-          API Key
-        </label>
-        <div className="slds-form-element__control slds-grid">
-          <input
-            id="apikey-input"
-            type="password"
-            className="slds-input slds-col"
-            placeholder="Enter API Key"
-            aria-label="API Key"
-            data-testid="apikey-input"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-          />
-          <Button
-            className="slds-m-left_x-small"
-            variant="brand"
-            title="Login with API Key"
-            onClick={onSubmit}
-          >
-            Login
-          </Button>
-        </div>
-        {error ? (
-          <div className="slds-form-element__help slds-text-color_error" role="alert">
-            {error}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-};
-
 const UserLoginPrompt = (props: AppProps) => {
   return (
     <Card icon="user" title="Login">
@@ -274,7 +197,6 @@ const UserLoginPrompt = (props: AppProps) => {
         <div>
           <GoogleLoginButton />
           <SalesforceLoginButton {...props} />
-          <ApiKeyLoginForm />
         </div>
       </div>
     </Card>
