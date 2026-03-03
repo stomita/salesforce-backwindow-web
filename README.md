@@ -48,6 +48,9 @@ In the Config vars section, you need to enter the values got from the previous s
 - **SF_DEVHUB_CLIENT_ID** : Your Salesforce connected app client ID for DevHub authentication.
 - **SF_DEVHUB_PRIVATE_KEY_BASE64**: Private key of the cert in the connected app for DevHub JWT authentication, encoded in base64. To encode a key file to base64, execute `openssl base64 -A ./path/to/server.key`. 
 - **ALLOWED_USER_EMAILS**: List Google accounts (email addresses) in comma-separated, that are allowed to use the backwindow app to login to scratch orgs.
+- **AGENT_API_KEY**: (Optional) Static API key for agent/programmatic access via `POST /api/backwindow`.
+- **GH_OIDC_AUDIENCE**: (Optional) Expected `aud` claim for GitHub Actions OIDC token verification.
+- **GH_OIDC_ALLOWED_REPOS**: (Optional) Comma-separated list of GitHub repositories (e.g. `owner/repo`) allowed to authenticate via OIDC.
 
 # Getting Started
 
@@ -71,4 +74,52 @@ After you generated the login URL, you can copy it and paste anywhere to share o
 
 It is secure because the URL is protected by the Google/Salesforce Login, and only users with registered email / username can get the login access.
 
+# API Access (Agent / CI)
 
+For programmatic access from CI pipelines or automated agents, Backwindow provides a stateless API endpoint that returns a frontdoor.jsp URL as JSON, without requiring browser-based OAuth login.
+
+## `POST /api/backwindow`
+
+### Request Body
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `hub`     | Yes      | DevHub organization ID (18 characters) |
+| `un`      | Yes      | Username of the user to log in |
+| `ls`      | No       | Login server URL (default: `https://login.salesforce.com`) |
+| `retURL`  | No       | Relative URL to redirect to after login |
+
+### Authentication
+
+One of the following headers is required (not both):
+
+#### API Key
+
+Set the `AGENT_API_KEY` environment variable on the server, then pass it in the request header:
+
+```
+X-API-Key: <your-api-key>
+```
+
+#### GitHub Actions OIDC
+
+Configure `GH_OIDC_AUDIENCE` and `GH_OIDC_ALLOWED_REPOS` on the server, then pass the OIDC token obtained in a GitHub Actions workflow:
+
+```
+Authorization: Bearer <oidc-token>
+```
+
+### Response
+
+```json
+{ "frontdoorUrl": "https://example.my.salesforce.com/secur/frontdoor.jsp?sid=..." }
+```
+
+### Example (curl with API Key)
+
+```bash
+curl -X POST https://<your-app>/api/backwindow \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: $AGENT_API_KEY" \
+  -d '{"hub":"00D...","un":"user@example.com"}'
+```
