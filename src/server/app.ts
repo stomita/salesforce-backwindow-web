@@ -84,7 +84,10 @@ const ghJwksClient = jwksRsa({
 
 const GITHUB_OIDC_ISSUER = "https://token.actions.githubusercontent.com";
 
-function verifyGitHubOIDCToken(idToken: string): Promise<{
+function verifyGitHubOIDCToken(
+  idToken: string,
+  audience: string
+): Promise<{
   sub: string;
   repository: string;
   actor: string;
@@ -103,7 +106,7 @@ function verifyGitHubOIDCToken(idToken: string): Promise<{
       },
       {
         issuer: GITHUB_OIDC_ISSUER,
-        audience: GH_OIDC_AUDIENCE,
+        audience,
         algorithms: ["RS256"],
       },
       (err, decoded) => {
@@ -181,15 +184,10 @@ async function authenticateApiRequest(
       };
     }
     const idToken = authHeader.slice(7);
-    if (!GH_OIDC_AUDIENCE) {
-      return {
-        status: 400,
-        error: "github_oidc_not_configured",
-        message: "GitHub OIDC authentication is not configured",
-      };
-    }
+    const audience =
+      GH_OIDC_AUDIENCE || `${req.protocol}://${req.get("host")}`;
     try {
-      const payload = await verifyGitHubOIDCToken(idToken);
+      const payload = await verifyGitHubOIDCToken(idToken, audience);
       const { repository } = payload;
       if (!GH_OIDC_ALLOWED_REPOS.includes(repository)) {
         return {
