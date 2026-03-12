@@ -758,7 +758,11 @@ app.post(
 
     res
       .set("Cache-Control", "no-store")
-      .json({ frontdoorUrl: result.frontdoorUrl });
+      .json({
+        frontdoorUrl: result.frontdoorUrl,
+        accessToken: result.accessToken,
+        instanceUrl: result.instanceUrl,
+      });
   }
 );
 
