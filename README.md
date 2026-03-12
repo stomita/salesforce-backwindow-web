@@ -112,7 +112,11 @@ Authorization: Bearer <oidc-token>
 ### Response
 
 ```json
-{ "frontdoorUrl": "https://example.my.salesforce.com/secur/frontdoor.jsp?sid=..." }
+{
+  "frontdoorUrl": "https://example.my.salesforce.com/secur/frontdoor.jsp?sid=...",
+  "accessToken": "00D...",
+  "instanceUrl": "https://example.my.salesforce.com"
+}
 ```
 
 ### Example (curl with API Key)
