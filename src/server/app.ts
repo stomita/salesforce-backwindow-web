@@ -4,7 +4,6 @@ import session from "express-session";
 import cookieParser from "cookie-parser";
 import jsonwebtoken from "jsonwebtoken";
 import axios from "axios";
-import { Connection, OAuth2 as SfOAuth2 } from "jsforce";
 import { OAuth2Client as GlOAuth2Client } from "google-auth-library";
 import jwksRsa from "jwks-rsa";
 
@@ -13,10 +12,6 @@ import jwksRsa from "jwks-rsa";
  */
 const SF_LOGIN_URL = process.env.SF_LOGIN_URL ?? "https://login.salesforce.com";
 const SF_SANDBOX_LOGIN_URL = "https://test.salesforce.com";
-const SF_BACKWINDOW_CLIENT_ID = process.env.SF_BACKWINDOW_CLIENT_ID ?? "";
-const SF_BACKWINDOW_CLIENT_SECRET =
-  process.env.SF_BACKWINDOW_CLIENT_SECRET ?? "";
-const SF_BACKWINDOW_REDIRECT_URI = process.env.SF_BACKWINDOW_REDIRECT_URI ?? "";
 
 const GL_BACKWINDOW_CLIENT_ID = process.env.GL_BACKWINDOW_CLIENT_ID ?? "";
 
@@ -30,48 +25,32 @@ const AGENT_API_KEY = process.env.AGENT_API_KEY ?? "";
 /**
  *
  */
-const SF_DEVHUB_ORG_ID = process.env.SF_DEVHUB_ORG_ID ?? "";
-const SF_DEVHUB_CLIENT_ID = process.env.SF_DEVHUB_CLIENT_ID ?? "";
-const SF_DEVHUB_PRIVATE_KEY_BASE64 =
-  process.env.SF_DEVHUB_PRIVATE_KEY_BASE64 ?? "";
-const SF_DEVHUB_PRIVATE_KEY = Buffer.from(
-  SF_DEVHUB_PRIVATE_KEY_BASE64,
+// Connected App used for JWT bearer login into the target org(s). Prefer
+// SF_JWT_*; SF_DEVHUB_* is kept for backward compatibility.
+const SF_JWT_CLIENT_ID =
+  process.env.SF_JWT_CLIENT_ID ?? process.env.SF_DEVHUB_CLIENT_ID ?? "";
+const SF_JWT_PRIVATE_KEY_BASE64 =
+  process.env.SF_JWT_PRIVATE_KEY_BASE64 ??
+  process.env.SF_DEVHUB_PRIVATE_KEY_BASE64 ??
+  "";
+const SF_JWT_PRIVATE_KEY = Buffer.from(
+  SF_JWT_PRIVATE_KEY_BASE64,
   "base64"
 ).toString("ascii");
 
+const ALLOWED_USER_EMAILS = (process.env.ALLOWED_USER_EMAILS ?? "")
+  .split(/\s*,\s*/)
+  .filter(Boolean);
 
-const ALLOWED_USER_EMAILS = (process.env.ALLOWED_USER_EMAILS ?? "").split(
-  /\s*,\s*/
-);
+// Whitelist of callers allowed to use backwindow. This is the only access gate:
+// the target org/user is determined solely by the `un` (username) in the JWT
+// bearer flow, not by any org ID.
+const allowedList = [
+  ...ALLOWED_USER_EMAILS.map((email) => ({ provider: "google", email })),
+  ...GH_OIDC_ALLOWED_REPOS.map((repo) => ({ provider: "github", email: repo })),
+  ...(AGENT_API_KEY ? [{ provider: "apikey", email: "agent" }] : []),
+];
 
-const devHubOrgInfo = {
-  id: SF_DEVHUB_ORG_ID,
-  sfOrgId: SF_DEVHUB_ORG_ID,
-  appClientId: SF_DEVHUB_CLIENT_ID,
-  appPrivateKey: SF_DEVHUB_PRIVATE_KEY,
-  allowedList: [
-    ...ALLOWED_USER_EMAILS.map((email) => ({
-      id: email,
-      provider: "google",
-      email,
-    })),
-    ...GH_OIDC_ALLOWED_REPOS.map((repo) => ({
-      id: `github:${repo}`,
-      provider: "github",
-      email: repo,
-    })),
-    ...(AGENT_API_KEY
-      ? [{ id: "apikey:agent", provider: "apikey", email: "agent" }]
-      : []),
-  ],
-};
-
-const sfOAuth2 = new SfOAuth2({
-  loginUrl: SF_LOGIN_URL,
-  clientId: SF_BACKWINDOW_CLIENT_ID,
-  clientSecret: SF_BACKWINDOW_CLIENT_SECRET,
-  redirectUri: SF_BACKWINDOW_REDIRECT_URI,
-});
 const glOAuth2 = new GlOAuth2Client(GL_BACKWINDOW_CLIENT_ID);
 
 const ghJwksClient = jwksRsa({
@@ -219,7 +198,6 @@ async function authenticateApiRequest(
 async function performBackwindowLogin(params: {
   uid: string;
   provider: string;
-  hub: string;
   un: string;
   ls?: string;
   retURL?: string;
@@ -232,17 +210,10 @@ async function performBackwindowLogin(params: {
     }
   | { success: false; status: number; error: string; message: string }
 > {
-  const {
-    uid,
-    provider,
-    hub: sfOrgId,
-    un: username,
-    ls: login = "production",
-    retURL,
-  } = params;
+  const { uid, provider, un: username, ls: login = "production", retURL } =
+    params;
 
   if (
-    !sfOrgId ||
     !username ||
     (retURL && !/^\/[\w\-:\/?#\[\]@!$&'\(\)*+,;=%]+$/.test(retURL))
   ) {
@@ -251,7 +222,6 @@ async function performBackwindowLogin(params: {
         "error:invalid_backwindow_parameter",
         `provider:${provider}`,
         `uid:${uid}`,
-        `hub:${sfOrgId}`,
         `username:${username}`,
         `ls:${login}`,
         `retURL:${retURL}`,
@@ -265,27 +235,6 @@ async function performBackwindowLogin(params: {
     };
   }
 
-  const org = sfOrgId === devHubOrgInfo.sfOrgId ? devHubOrgInfo : null;
-  if (!org) {
-    console.error(
-      [
-        "error:hub_org_not_found",
-        `provider:${provider}`,
-        `uid:${uid}`,
-        `hub:${sfOrgId}`,
-        `username:${username}`,
-        `ls:${login}`,
-      ].join("\t")
-    );
-    return {
-      success: false,
-      status: 404,
-      error: "hub_org_not_found",
-      message: "Hub org not found",
-    };
-  }
-
-  const { appClientId, appPrivateKey, allowedList } = org;
   let isAllowed = false;
   for (const entry of allowedList) {
     if (entry.email === uid && entry.provider === provider) {
@@ -299,7 +248,6 @@ async function performBackwindowLogin(params: {
         "error:access_not_allowed",
         `provider:${provider}`,
         `uid:${uid}`,
-        `hub:${sfOrgId}`,
         `username:${username}`,
         `ls:${login}`,
       ].join("\t")
@@ -314,12 +262,12 @@ async function performBackwindowLogin(params: {
 
   const token = jsonwebtoken.sign(
     {
-      iss: appClientId,
+      iss: SF_JWT_CLIENT_ID,
       aud: login === "production" ? SF_LOGIN_URL : SF_SANDBOX_LOGIN_URL,
       sub: username,
       exp: Math.floor(Date.now() / 1000) + 3 * 60,
     },
-    appPrivateKey,
+    SF_JWT_PRIVATE_KEY,
     { algorithm: "RS256" }
   );
   const tokenEndpointUrl =
@@ -343,7 +291,6 @@ async function performBackwindowLogin(params: {
           `error:${result.statusText}`,
           `provider:${provider}`,
           `uid:${uid}`,
-          `hub:${sfOrgId}`,
           `username:${username}`,
           `ls:${login}`,
         ].join("\t")
@@ -361,7 +308,6 @@ async function performBackwindowLogin(params: {
         `status:login_to_org`,
         `provider:${provider}`,
         `uid:${uid}`,
-        `hub:${sfOrgId}`,
         `username:${username}`,
         `ls:${login}`,
       ].join("\t")
@@ -386,7 +332,6 @@ async function performBackwindowLogin(params: {
         `error:${error_description}`,
         `provider:${provider}`,
         `uid:${uid}`,
-        `hub:${sfOrgId}`,
         `username:${username}`,
         `ls:${login}`,
       ].join("\t")
@@ -407,9 +352,6 @@ declare module "express-session" {
   interface SessionData {
     uid?: string;
     provider?: string;
-    isAdmin?: boolean;
-    sfOrgId?: string;
-    state?: string;
     redirectPath?: string;
   }
 }
@@ -437,141 +379,13 @@ app.use(
  *
  */
 app.get("/me", async (req, res) => {
-  const { uid, isAdmin } = req.session;
+  const { uid } = req.session;
   if (uid == null) {
     res.status(401).json({ errors: [{ message: "User is not logged in" }] });
     return;
   }
-  res.json({ uid, isAdmin });
+  res.json({ uid });
 });
-
-/**
- *
- */
-app.get("/org", async (req, res) => {
-  const { sfOrgId } = req.session;
-  if (sfOrgId == null) {
-    res
-      .status(403)
-      .json({ errors: [{ message: "Only Org Admin can access org info" }] });
-    return;
-  }
-  const org = sfOrgId === devHubOrgInfo.sfOrgId ? devHubOrgInfo : null;
-  if (!org) {
-    res
-      .status(404)
-      .json({ errors: [{ message: "Organization is not found" }] });
-    return;
-  }
-  res.json(org);
-});
-
-/**
- *
- */
-app.patch("/org", async (req, res) => {
-  res.status(403).json({
-    errors: [
-      { message: "You cannot modify the org info. Use env variable instead." },
-    ],
-  });
-});
-
-/**
- *
- */
-app.delete("/org", async (req, res) => {
-  res.status(403).json({
-    errors: [{ message: "You cannot delete the org info." }],
-  });
-});
-
-/**
- *
- */
-app.post("/org/allowedList", (req, res) => {
-  res.status(403).json({
-    errors: [
-      {
-        message:
-          "You cannot add list entry from API. Use env variable instead.",
-      },
-    ],
-  });
-});
-
-/**
- *
- */
-app.delete("/org/allowedList/:entryId", async (req, res) => {
-  res.status(403).json({
-    errors: [
-      {
-        message:
-          "You cannot delete list entry from API. Use env variable instead.",
-      },
-    ],
-  });
-});
-
-/**
- *
- */
-app.get("/auth/salesforce", async (req, res) => {
-  const state = crypto.randomBytes(16).toString("hex");
-  req.session.state = state;
-  const authzUrl = sfOAuth2.getAuthorizationUrl({
-    state,
-    prompt: "login",
-  });
-  res.redirect(authzUrl);
-});
-
-/**
- *
- */
-app.get(
-  "/auth/salesforce/callback",
-  async (
-    req: Request<{}, {}, {}, { code?: string; state?: string; error?: string }>,
-    res
-  ) => {
-    const { code, state, error } = req.query;
-    if (error) {
-      res.redirect(`/#error=${error}`);
-      return;
-    }
-    if (req.session.state !== state) {
-      res.redirect("/#error=invalid_state");
-      return;
-    }
-    if (!code) {
-      res.redirect("/#error=invalid_code");
-      return;
-    }
-    const conn = new Connection({ oauth2: sfOAuth2 });
-    const { id: sfUserId, organizationId: sfOrgId } = await conn.authorize(
-      code
-    );
-    const { username } = await conn.identity();
-    const setting = await conn.request<{
-      userSettings: { canModifyAllData: boolean };
-    } | null>("/connect/organization");
-    let isAdmin = setting?.userSettings.canModifyAllData ?? false;
-    if (isAdmin) {
-      if (devHubOrgInfo.sfOrgId === sfOrgId) {
-        req.session.sfOrgId = sfOrgId;
-      } else {
-        isAdmin = false;
-      }
-    }
-    req.session.uid = username;
-    req.session.provider = "salesforce";
-    req.session.isAdmin = isAdmin;
-    const { redirectPath } = req.session;
-    res.redirect(redirectPath ?? "/");
-  }
-);
 
 /**
  *
@@ -609,7 +423,6 @@ app.post(
       if (email && email_verified) {
         req.session.uid = email;
         req.session.provider = "google";
-        req.session.isAdmin = false;
       }
       const { redirectPath } = req.session;
       res.redirect(redirectPath ?? "/");
@@ -639,7 +452,6 @@ app.get(
       {},
       {},
       {
-        hub?: string;
         un?: string;
         ls?: string;
         retURL?: string;
@@ -647,18 +459,12 @@ app.get(
     >,
     res
   ) => {
-    const {
-      hub,
-      un,
-      ls,
-      retURL,
-    } = req.query;
+    const { un, ls, retURL } = req.query;
     const { uid, provider } = req.session;
     if (!uid || !provider) {
       console.log(
         [
           "status:authentication_required",
-          `hub:${hub}`,
           `username:${un}`,
           `ls:${ls ?? "production"}`,
         ].join("\t")
@@ -668,7 +474,7 @@ app.get(
       return;
     }
 
-    if (!hub || !un) {
+    if (!un) {
       res.status(400).send("invalid_backwindow_parameter");
       return;
     }
@@ -676,7 +482,6 @@ app.get(
     const result = await performBackwindowLogin({
       uid,
       provider,
-      hub,
       un,
       ls,
       retURL,
@@ -713,7 +518,6 @@ app.post(
       {},
       {},
       {
-        hub?: string;
         un?: string;
         ls?: string;
         retURL?: string;
@@ -730,12 +534,12 @@ app.post(
     }
 
     const { uid, provider } = authResult;
-    const { hub, un, ls, retURL } = req.body;
+    const { un, ls, retURL } = req.body;
 
-    if (!hub || !un) {
+    if (!un) {
       res.status(400).json({
         error: "invalid_backwindow_parameter",
-        message: "Both 'hub' and 'un' parameters are required",
+        message: "The 'un' parameter is required",
       });
       return;
     }
@@ -743,7 +547,6 @@ app.post(
     const result = await performBackwindowLogin({
       uid,
       provider,
-      hub,
       un,
       ls,
       retURL,

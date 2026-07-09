@@ -14,9 +14,9 @@ You must deploy the code to your own server to use backwindow.
 
 ## Deploy Backwindow as Your Own App
 
-### Setup Google Sign-in / Salesforce Connected App for Backwindow Web App
+### Setup Google Sign-in for Backwindow Web App
 
-In order to run the backwindow app as your own app, you need to setup Google Sign-in Client and Salesforce Connected App.
+In order to run the backwindow app as your own app, you need to setup a Google Sign-in Client. This is how users authenticate to the backwindow web app itself.
 
 * Google Sign-in https://developers.google.com/identity/sign-in/web/sign-in
 
@@ -24,11 +24,13 @@ The origins and callback URLs(redirect URIs) must match the deploying app URL, w
 
 ### Setup JWT Bearer Flow
 
-You need to enable JWT bearer flow in your DevHub org. See the link below to enable the JWT grant.
+You need to enable JWT bearer flow in the org(s) you want to log in to. See the link below to enable the JWT grant.
 
 https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_auth_jwt_flow.htm
 
-Please memo the client ID of the connected app you created in the above setup, and keep the private key file generated.
+The org does not have to be a DevHub — any org (production / sandbox / scratch) works, as long as the Connected App is installed with its certificate uploaded and the target users pre-authorized.
+
+Please memo the client ID (consumer key) of the connected app you created in the above setup, and keep the private key file generated.
 
 ### Deploy App 
 
@@ -41,13 +43,10 @@ In the Config vars section, you need to enter the values got from the previous s
 - **GL_BACKWINDOW_CLIENT_ID**: Client ID obtained in Google sign-in client registration.
 - **GL_BACKWINDOW_CLIENT_SECRET**: Client secret obtained in Google sign-in client registration.
 - **GL_BACKWINDOW_REDIRECT_URI**: Redirect URI registered in the Google sign-in client.
-- **SF_BACKWINDOW_CLIENT_ID**: Client ID obtained in Salesforce connected app registration.
-- **SF_BACKWINDOW_CLIENT_SECRET**: Client secret obtained in Salesforce connected app registration.
-- **SF_BACKWINDOW_REDIRECT_URI**: Callback URL registered in the Salesforce connected app.
-- **SF_DEVHUB_ORG_ID**: Your Salesforce DevHub Org's organization ID.
-- **SF_DEVHUB_CLIENT_ID** : Your Salesforce connected app client ID for DevHub authentication.
-- **SF_DEVHUB_PRIVATE_KEY_BASE64**: Private key of the cert in the connected app for DevHub JWT authentication, encoded in base64. To encode a key file to base64, execute `openssl base64 -A ./path/to/server.key`. 
-- **ALLOWED_USER_EMAILS**: List Google accounts (email addresses) in comma-separated, that are allowed to use the backwindow app to login to scratch orgs.
+- **SF_JWT_CLIENT_ID**: Client ID (consumer key) of the Connected App used for JWT bearer login into the target org(s).
+- **SF_JWT_PRIVATE_KEY_BASE64**: Private key of the cert in the JWT Connected App, encoded in base64. To encode a key file to base64, execute `openssl base64 -A ./path/to/server.key`.
+- **SF_DEVHUB_CLIENT_ID** / **SF_DEVHUB_PRIVATE_KEY_BASE64**: (Deprecated aliases of `SF_JWT_CLIENT_ID` / `SF_JWT_PRIVATE_KEY_BASE64`, kept for backward compatibility) `SF_JWT_*` takes precedence when both are set.
+- **ALLOWED_USER_EMAILS**: List Google accounts (email addresses) in comma-separated, that are allowed to use the backwindow app to login to the target orgs.
 - **AGENT_API_KEY**: (Optional) Static API key for agent/programmatic access via `POST /api/backwindow`.
 - **GH_OIDC_AUDIENCE**: (Optional) Expected `aud` claim for GitHub Actions OIDC token verification.
 - **GH_OIDC_ALLOWED_REPOS**: (Optional) Comma-separated list of GitHub repositories (e.g. `owner/repo`) allowed to authenticate via OIDC.
@@ -60,19 +59,15 @@ In the "Home" screen you can generate a login URL of backwindow without any cred
 
 ![image](https://user-images.githubusercontent.com/23387/142156337-6980f35e-6d55-4965-a8dd-6ce420ac737f.png)
 
-To generate a login URL, you need to enter the DevHub org ID, the username of the user to log in, and the environment of the org you want to log in.
+To generate a login URL, you need to enter the username of the user to log in and the environment (production / sandbox) of the org you want to log in to.
 
-Note that the org ID is not the org where you want to log in, but the org of the DevHub.
-
-You should also keep in mind that the org ID should be 18 characters long, not 15.
-
-You can get the 18-char org ID from Salesforce CLI by `force:org:display` command.
+The target org is determined by the username; you do not need to specify an org ID.
 
 ## Share Login URL
 
 After you generated the login URL, you can copy it and paste anywhere to share other members (e.g. email, slack, chatter, or github PR comment).
 
-It is secure because the URL is protected by the Google/Salesforce Login, and only users with registered email / username can get the login access.
+It is secure because the URL is protected by the Google Login, and only users with registered email can get the login access.
 
 # API Access (Agent / CI)
 
@@ -84,9 +79,8 @@ For programmatic access from CI pipelines or automated agents, Backwindow provid
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `hub`     | Yes      | DevHub organization ID (18 characters) |
-| `un`      | Yes      | Username of the user to log in |
-| `ls`      | No       | Login server URL (default: `https://login.salesforce.com`) |
+| `un`      | Yes      | Username of the user to log in (this alone determines the target org) |
+| `ls`      | No       | Environment: `production` (default) or `sandbox` |
 | `retURL`  | No       | Relative URL to redirect to after login |
 
 ### Authentication
@@ -125,5 +119,5 @@ Authorization: Bearer <oidc-token>
 curl -X POST https://<your-app>/api/backwindow \
   -H "Content-Type: application/json" \
   -H "X-API-Key: $AGENT_API_KEY" \
-  -d '{"hub":"00D...","un":"user@example.com"}'
+  -d '{"un":"user@example.com"}'
 ```
