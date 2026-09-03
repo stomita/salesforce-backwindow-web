@@ -15,7 +15,7 @@
     "build": "run-p build:asset build:client build:server",
     "build:asset": "cpx \"node_modules/@salesforce-ux/design-system/assets/**/*\" public/assets",
     "build:client": "node ./esbuild.js",
-    "build:server": "esbuild src/server/app.ts --bundle --platform=node --target=node14 --outdir=lib/server",
+    "build:server": "esbuild src/server/app.ts --bundle --platform=node --outdir=lib/server",
     "watch": "npm run build:client watch",
     "typecheck": "tsc --noEmit",
     "postinstall": "npm run build"
