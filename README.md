@@ -41,7 +41,6 @@ You can easily deploy to heroku using the button below:
 In the Config vars section, you need to enter the values got from the previous step.
 
 - **GL_BACKWINDOW_CLIENT_ID**: Client ID obtained in Google sign-in client registration.
-- **GL_BACKWINDOW_CLIENT_SECRET**: Client secret obtained in Google sign-in client registration.
 - **GL_BACKWINDOW_REDIRECT_URI**: Redirect URI registered in the Google sign-in client.
 - **SF_JWT_CLIENT_ID**: Client ID (consumer key) of the Connected App used for JWT bearer login into the target org(s).
 - **SF_JWT_PRIVATE_KEY_BASE64**: Private key of the cert in the JWT Connected App, encoded in base64. To encode a key file to base64, execute `openssl base64 -A ./path/to/server.key`.

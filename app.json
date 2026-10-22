@@ -15,23 +15,31 @@
       "description": "\"Sign-in with Google\" callback URL. See https://developers.google.com/identity/sign-in/web/sign-in",
       "value": "https://your-app-name.herokuapp.com/auth/google/callback"
     },
-    "SF_BACKWINDOW_CLIENT_ID": {
-      "description": "Client ID of the Salesforce connected app for backwindow web app"
+    "SF_JWT_CLIENT_ID": {
+      "description": "Client ID (consumer key) of the Connected App used for JWT bearer login into the target org(s)"
     },
-    "SF_BACKWINDOW_CLIENT_SECRET": {
-      "description": "Client Secret of the Salesforce connected app for backwindow web app"
+    "SF_JWT_PRIVATE_KEY_BASE64": {
+      "description": "Private key of the cert in the JWT Connected App, encoded in base64. To encode a key file to base64, execute `openssl base64 -A ./path/to/server.key`"
     },
-    "SF_BACKWINDOW_REDIRECT_URI": {
-      "description": "Callback URL of the Salesforce connected app for backwindow web app",
-      "value": "https://your-app-name.herokuapp.com/auth/salesforce/callback"
+    "ALLOWED_USER_EMAILS": {
+      "description": "Comma-separated list of Google accounts (email addresses) that are allowed to use the backwindow app to login to the target orgs"
     },
-    "ALLOW_MULTI_ORG": {
-      "description": "Accept multi Salesforce organization to use the instance. With this value is set to 'true', connected app configs and allowed access lists will be kept per Salesforce org. By default, only the Salesforce org who signed-in first as admin is designated as the owner of the instance"
+    "AGENT_API_KEY": {
+      "description": "Static API key for agent/programmatic access via POST /api/backwindow",
+      "required": false
+    },
+    "GH_OIDC_AUDIENCE": {
+      "description": "Expected aud claim for GitHub Actions OIDC token verification",
+      "required": false
+    },
+    "GH_OIDC_ALLOWED_REPOS": {
+      "description": "Comma-separated list of GitHub repositories (e.g. owner/repo) allowed to authenticate via OIDC",
+      "required": false
+    },
+    "SF_LOGIN_URL": {
+      "description": "Salesforce login URL used for production orgs",
+      "value": "https://login.salesforce.com",
+      "required": false
     }
-  },
-  "addons": [
-    {
-      "plan": "heroku-postgresql:hobby-dev"
-    }
-  ]
+  }
 }
